@@ -1,0 +1,11 @@
+# Global Jinja2 context variables
+# These variables are available in all markdown chapters
+
+# Example variables (customize as needed):
+# product_name: "My Product"
+# version: "1.0"
+# website: "https://example.com"
+# author_bio: |
+#   About the author...
+
+# Add your own variables here

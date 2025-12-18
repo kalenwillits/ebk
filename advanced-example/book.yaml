@@ -1,0 +1,33 @@
+metadata:
+  title: "Advanced Example"
+  author: "Kalen Willits"
+  language: "en-US"
+  identifier: "fd7a6e57-b169-48c5-8156-4445484ad445"
+  date: "2025-12-18"
+  publisher: ""
+  description: "A book created with ebk"
+  subject: ""
+
+# Optional cover image (relative to assets/images/)
+# Uncomment and provide your cover image
+# cover_image: "cover.jpg"
+
+# Default CSS applied to all chapters (relative to assets/css/)
+default_css:
+  - "custom.css"
+
+# Chapter discovery settings
+content:
+  # How to discover chapters: "auto" scans content/ recursively
+  # Set to "manual" to specify chapter list explicitly
+  discovery: "auto"
+
+  # Optional: Manual chapter list (only used if discovery is "manual")
+  # chapters:
+  #   - path: "01-introduction.md"
+  #     css: ""  # Optional per-chapter CSS override
+  #   - path: "02-getting-started/_chapter.md"
+
+# Output settings
+output:
+  filename: "advanced-example.epub"
