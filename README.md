@@ -46,7 +46,7 @@ ebk "My First Book"
 cd my-first-book
 
 # Edit book.yaml with your metadata
-# Add your content to content/
+# Add your content to pages/
 # Run ebk to build
 
 ebk
@@ -72,7 +72,7 @@ When you create a new book with `ebk "My Book"`, this structure is created:
 ```
 my-book/
 ├── book.yaml              # Book metadata and configuration
-├── content/               # Your markdown chapters
+├── pages/                 # Your markdown chapters
 │   └── 01-introduction.md
 ├── context/               # Jinja2 context files
 │   └── global.yaml
@@ -120,7 +120,7 @@ output:
 Use numeric prefixes to control chapter order:
 
 ```
-content/
+pages/
 ├── 01-introduction.md
 ├── 02-getting-started.md
 ├── 03-advanced-topics/
@@ -316,7 +316,7 @@ ebk/
 ## How It Works
 
 1. **Project creation**: `ebk "Book Name"` creates opinionated directory structure
-2. **Chapter discovery**: Recursively scans `content/` for markdown files
+2. **Chapter discovery**: Recursively scans `pages/` for markdown files
 3. **Ordering**: Uses numeric prefixes or frontmatter `order:` field
 4. **Jinja2 rendering**: Applies templates BEFORE markdown conversion
 5. **Markdown conversion**: Converts to XHTML with extensions (tables, code, etc.)
@@ -343,7 +343,7 @@ Make sure you're in a directory with a `.ebk` file and `book.yaml`.
 
 ### "No markdown files found"
 
-Check that your markdown files are in the `content/` directory.
+Check that your markdown files are in the `pages/` directory.
 
 ### "Error parsing book.yaml"
 

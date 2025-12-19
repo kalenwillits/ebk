@@ -54,13 +54,18 @@ def get_resources_path():
 
 
 def create_directory_structure(project_dir):
-    """Create the opinionated directory structure."""
+    """
+    Create suggested directory structure for new projects.
+
+    Note: This structure is just a suggestion for organization.
+    ebk finds your content by file extension, not directory location,
+    so you can reorganize these files however you prefer after scaffolding.
+    """
     dirs = [
-        'content',
-        'context',
-        'assets',
-        'assets/images',
-        'assets/css',
+        'pages',           # Suggested location for content
+        'context',         # For Jinja2 template variables
+        'assets/images',   # Suggested location for images
+        'assets/css',      # Suggested location for CSS
     ]
 
     for dir_name in dirs:
@@ -115,7 +120,7 @@ def copy_and_populate_templates(project_dir, book_name):
     for var, value in template_vars.items():
         chapter_content = chapter_content.replace(f'{{{var}}}', value)
 
-    with open(os.path.join(project_dir, 'content', '01-introduction.md'), 'w') as f:
+    with open(os.path.join(project_dir, 'pages', '01-introduction.md'), 'w') as f:
         f.write(chapter_content)
 
     # Copy global.yaml to context/
@@ -169,5 +174,5 @@ def create_new_book(book_name):
     print("Next steps:")
     print(f"  1. cd {slug}")
     print("  2. Edit book.yaml with your book metadata")
-    print("  3. Add your content to content/")
+    print("  3. Add your markdown content (organize however you prefer)")
     print("  4. Run 'ebk' to build your book")

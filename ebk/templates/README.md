@@ -4,19 +4,36 @@ An EPUB book project created with [ebk](https://github.com/anthropics/ebk).
 
 ## Project Structure
 
+ebk finds your content by file extension, not directory location. Organize however you prefer!
+
+**Suggested structure** (created by scaffolding):
 ```
 .
 ├── book.yaml              # Book metadata and configuration
-├── content/               # Your markdown chapters (supports deep nesting)
+├── pages/                 # Markdown chapters (optional - can be anywhere)
 │   └── 01-introduction.md
-├── context/               # Jinja2 context files for template variables
+├── context/               # Jinja2 template variables
 │   └── global.yaml
 ├── assets/
-│   ├── images/           # Book images
-│   └── css/              # Custom stylesheets
+│   ├── images/           # Images (optional - can be anywhere)
+│   └── css/              # Stylesheets (optional - can be anywhere)
 │       └── custom.css
-└── README.md             # This file
+└── README.md
 ```
+
+**Flat structure** (also works):
+```
+.
+├── book.yaml
+├── 01-intro.md           # Chapters in root
+├── 02-getting-started.md
+├── cover.jpg             # Images in root
+├── custom.css            # CSS in root
+└── context/
+    └── global.yaml
+```
+
+**Or any mix** of flat and nested you prefer.
 
 ## Building Your Book
 
@@ -28,18 +45,36 @@ ebk
 
 The output file will be created as `{output_filename}` in this directory.
 
-## Directory Guidelines
+## Content Organization
 
-### content/
-Place all your markdown chapters here. You can use deep nesting to organize complex books.
+### Markdown Files (.md)
+ebk recursively searches for `.md` files throughout your project (except excluded directories).
 
 **Ordering chapters:**
-- Use numeric prefixes: `01-intro.md`, `02-chapter.md`, etc.
-- Or use frontmatter: Add `order: 1` in YAML frontmatter
-- Files named `_chapter.md` serve as folder introductions
+1. **Frontmatter order field** (highest priority): Add `order: 1` in YAML frontmatter
+2. **Numeric prefix** (fallback): Use `01-intro.md`, `02-chapter.md`, etc.
+3. **Directory depth & alphabetical** (final fallback)
 
-### context/
-Add Jinja2 template variables here:
+**Special files:**
+- `_chapter.md` - Folder introduction (works at any nesting level)
+
+### Images
+ebk finds images anywhere in your project: `.jpg`, `.jpeg`, `.png`, `.gif`, `.svg`
+
+Reference images in your markdown:
+```markdown
+![Cover Image](cover.jpg)
+```
+
+### CSS Stylesheets
+ebk finds `.css` files anywhere in your project. Specify which to include in `book.yaml`:
+```yaml
+default_css:
+  - "custom.css"
+```
+
+### Jinja2 Template Variables (context/)
+Add template variables in the `context/` directory:
 - `global.yaml` - Variables available in all chapters
 - `{chapter-name}.yaml` - Chapter-specific overrides
 
@@ -47,7 +82,6 @@ Add Jinja2 template variables here:
 ```yaml
 product_name: "MyApp"
 version: "2.0"
-author_bio: "About the author..."
 ```
 
 **Usage in markdown:**
@@ -57,17 +91,16 @@ author_bio: "About the author..."
 This guide covers version {{ version }}.
 ```
 
-### assets/images/
-Place all book images here. Reference them in markdown:
-```markdown
-![Cover Image](../assets/images/cover.jpg)
-```
+### Excluding Directories
+By default, ebk skips: `.git`, `.venv`, `venv`, `node_modules`, `__pycache__`, `.ebk`, `build`, `dist`, `context`
 
-### assets/css/
-Add custom stylesheets here. Specify them in `book.yaml`:
+Customize exclusions in `book.yaml`:
 ```yaml
-default_css:
-  - "custom.css"
+discovery:
+  exclude:
+    - ".git"
+    - "drafts"       # Add your own
+    - "archive"
 ```
 
 ## Configuration (book.yaml)
@@ -81,10 +114,12 @@ Edit `book.yaml` to set:
 
 ## Tips
 
-1. **Preview your book**: Build frequently to see changes
-2. **Use context files**: Keep variables separate from content for easier maintenance
-3. **Organize with folders**: Use nested folders for multi-part books
-4. **Test your templates**: Make sure Jinja2 syntax is correct before building
+1. **Organize however you prefer**: ebk finds files by extension, so use the structure that makes sense for your project
+2. **Preview your book**: Build frequently to see changes
+3. **Use context files**: Keep variables separate from content for easier maintenance
+4. **Use numeric prefixes or frontmatter order**: Control chapter order explicitly
+5. **Test your templates**: Make sure Jinja2 syntax is correct before building
+6. **Exclude draft directories**: Add `drafts/` or `archive/` to discovery.exclude in book.yaml
 
 ## Getting Help
 

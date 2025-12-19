@@ -12,21 +12,25 @@ metadata:
 # Uncomment and provide your cover image
 # cover_image: "cover.jpg"
 
-# Default CSS applied to all chapters (relative to assets/css/)
+# Default CSS applied to all chapters
 default_css:
   - "custom.css"
 
-# Chapter discovery settings
-content:
-  # How to discover chapters: "auto" scans content/ recursively
-  # Set to "manual" to specify chapter list explicitly
-  discovery: "auto"
+# Content discovery configuration
+discovery:
+  # Search only in the pages/ directory
+  root: "pages"
 
-  # Optional: Manual chapter list (only used if discovery is "manual")
-  # chapters:
-  #   - path: "01-introduction.md"
-  #     css: ""  # Optional per-chapter CSS override
-  #   - path: "02-getting-started/_chapter.md"
+  exclude:
+    - ".git"
+    - ".venv"
+    - "venv"
+    - "node_modules"
+    - "__pycache__"
+    - ".ebk"
+    - "build"
+    - "dist"
+    - "context"
 
 # Output settings
 output:

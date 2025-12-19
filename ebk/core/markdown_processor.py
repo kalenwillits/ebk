@@ -37,9 +37,95 @@ def parse_frontmatter(md_content):
     return md_content, metadata
 
 
-def discover_chapters(content_dir):
+def should_exclude_path(path, exclude_patterns, search_root):
+    """
+    Check if path should be excluded based on exclusion patterns.
+
+    Args:
+        path: Full path to check
+        exclude_patterns: List of directory names to exclude
+        search_root: Root directory being searched
+
+    Returns:
+        bool: True if path should be excluded
+    """
+    if not exclude_patterns:
+        return False
+
+    # Get relative path components
+    try:
+        rel_path = os.path.relpath(path, search_root)
+    except ValueError:
+        # On Windows, relpath can fail if paths are on different drives
+        return False
+
+    # Check if any part of the path matches exclusion patterns
+    path_parts = rel_path.split(os.sep)
+    for part in path_parts:
+        if part in exclude_patterns:
+            return True
+
+    return False
+
+
+def discover_files_by_extension(project_root, extensions, exclude_dirs=None):
+    """
+    Recursively discover files with specified extensions from project root.
+
+    Args:
+        project_root: Root directory to search from
+        extensions: List of file extensions (e.g., ['.md', '.markdown'])
+        exclude_dirs: List of directory names to exclude (e.g., ['.git', 'venv'])
+
+    Returns:
+        list: Full paths to discovered files, sorted
+    """
+    if exclude_dirs is None:
+        exclude_dirs = ['.git', '.venv', 'venv', 'node_modules', '__pycache__',
+                       '.ebk', 'build', 'dist']
+
+    if not os.path.exists(project_root):
+        return []
+
+    discovered_files = []
+
+    def scan_directory(path, depth=0):
+        """Recursively scan directory for files with specified extensions."""
+        # Check if this directory should be excluded
+        if should_exclude_path(path, exclude_dirs, project_root):
+            return
+
+        try:
+            items = sorted(os.listdir(path))
+        except PermissionError:
+            return
+
+        for item in items:
+            full_path = os.path.join(path, item)
+
+            # Skip excluded paths
+            if should_exclude_path(full_path, exclude_dirs, project_root):
+                continue
+
+            if os.path.isfile(full_path):
+                # Check if file has one of the desired extensions (case-insensitive)
+                if any(full_path.lower().endswith(ext.lower()) for ext in extensions):
+                    discovered_files.append(full_path)
+            elif os.path.isdir(full_path):
+                # Recurse into subdirectory
+                scan_directory(full_path, depth + 1)
+
+    scan_directory(project_root)
+    return sorted(discovered_files)
+
+
+def discover_chapters(content_dir, exclude_dirs=None):
     """
     Recursively discover markdown files in content/ directory.
+
+    Args:
+        content_dir: Directory to search (can be project root)
+        exclude_dirs: List of directory names to exclude
 
     Returns:
         list: Ordered list of chapter dictionaries with keys:
@@ -58,6 +144,10 @@ def discover_chapters(content_dir):
 
     def scan_directory(path, depth=0):
         """Recursively scan directory for markdown files."""
+        # Check if this directory should be excluded
+        if exclude_dirs and should_exclude_path(path, exclude_dirs, content_dir):
+            return
+
         try:
             items = sorted(os.listdir(path))
         except PermissionError:
@@ -65,6 +155,10 @@ def discover_chapters(content_dir):
 
         for item in items:
             full_path = os.path.join(path, item)
+
+            # Skip excluded paths
+            if exclude_dirs and should_exclude_path(full_path, exclude_dirs, content_dir):
+                continue
 
             if os.path.isfile(full_path) and item.endswith('.md'):
                 # Read file to get frontmatter
@@ -169,14 +263,18 @@ def order_chapters(chapters):
     return sorted(chapters, key=sort_key)
 
 
-def get_chapters(content_dir):
+def get_chapters(content_dir, exclude_dirs=None):
     """
     Discover and order chapters from content directory.
+
+    Args:
+        content_dir: Directory to search (can be project root)
+        exclude_dirs: List of directory names to exclude
 
     Returns:
         list: Ordered list of chapter dictionaries
     """
-    chapters = discover_chapters(content_dir)
+    chapters = discover_chapters(content_dir, exclude_dirs)
     return order_chapters(chapters)
 
 

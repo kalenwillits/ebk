@@ -8,25 +8,49 @@ metadata:
   description: "A book created with ebk"
   subject: ""
 
-# Optional cover image (relative to assets/images/)
+# Optional cover image (place anywhere in project - ebk will find it by extension)
 # Uncomment and provide your cover image
 # cover_image: "cover.jpg"
 
-# Default CSS applied to all chapters (relative to assets/css/)
+# Default CSS applied to all chapters
 default_css:
   - "custom.css"
 
-# Chapter discovery settings
-content:
-  # How to discover chapters: "auto" scans content/ recursively
-  # Set to "manual" to specify chapter list explicitly
-  discovery: "auto"
+# Content discovery configuration
+# ebk recursively searches for files based on extensions, not directory structure
+discovery:
+  # Root directory for recursive search
+  # Use "." for project root (default), or specify a subdirectory like "pages"
+  root: "."
 
-  # Optional: Manual chapter list (only used if discovery is "manual")
-  # chapters:
-  #   - path: "01-introduction.md"
-  #     css: ""  # Optional per-chapter CSS override
-  #   - path: "02-getting-started/_chapter.md"
+  # Directories to exclude from all searches (markdown, CSS, images)
+  # Add any directories you want ebk to skip (e.g., drafts, archive, etc.)
+  exclude:
+    - ".git"
+    - ".venv"
+    - "venv"
+    - "node_modules"
+    - "__pycache__"
+    - ".ebk"
+    - "build"
+    - "dist"
+    - "context"
+
+  # File extensions for content (markdown chapters)
+  content_extensions:
+    - ".md"
+
+  # File extensions for images
+  image_extensions:
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+    - ".gif"
+    - ".svg"
+
+  # File extensions for stylesheets
+  css_extensions:
+    - ".css"
 
 # Output settings
 output:

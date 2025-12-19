@@ -7,7 +7,7 @@ An EPUB book project created with [ebk](https://github.com/anthropics/ebk).
 ```
 .
 ├── book.yaml              # Book metadata and configuration
-├── content/               # Your markdown chapters (supports deep nesting)
+├── pages/                 # Your markdown chapters (supports deep nesting)
 │   └── 01-introduction.md
 ├── context/               # Jinja2 context files for template variables
 │   └── global.yaml
@@ -30,7 +30,7 @@ The output file will be created as `test-book.epub` in this directory.
 
 ## Directory Guidelines
 
-### content/
+### pages/
 Place all your markdown chapters here. You can use deep nesting to organize complex books.
 
 **Ordering chapters:**

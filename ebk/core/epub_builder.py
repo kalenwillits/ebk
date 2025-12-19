@@ -5,12 +5,22 @@ import zipfile
 from xml.dom import minidom
 import markdown
 import yaml
-from ebk.core.markdown_processor import get_chapters, get_chapter_title
+from ebk.core.markdown_processor import (
+    get_chapters,
+    get_chapter_title,
+    discover_files_by_extension
+)
 from ebk.core.template_engine import render_chapter
 
 
 def get_all_filenames(dir_path, extensions):
-    """Get all files with specified extensions in directory."""
+    """
+    Get all files with specified extensions in directory (legacy function).
+
+    NOTE: This function is kept for backward compatibility but only searches
+    a single directory non-recursively. New code should use
+    get_all_files_with_paths() or get_all_filenames_recursive().
+    """
     if not os.path.exists(dir_path):
         return []
 
@@ -21,6 +31,59 @@ def get_all_filenames(dir_path, extensions):
             if any(item.lower().endswith(ext) for ext in extensions):
                 files.append(item)
     return sorted(files)
+
+
+def get_all_files_with_paths(project_root, extensions, exclude_dirs=None):
+    """
+    Get all files with full paths for reading during EPUB build.
+
+    Args:
+        project_root: Root directory to search recursively
+        extensions: List of file extensions to match (e.g., ['.css', '.jpg'])
+        exclude_dirs: List of directory names to exclude
+
+    Returns:
+        dict: Mapping of filename -> full path
+
+    Note: If duplicate filenames exist in different directories,
+    the last one in sorted order wins.
+    """
+    full_paths = discover_files_by_extension(project_root, extensions, exclude_dirs)
+
+    # Create mapping: filename -> full path
+    # If duplicate filenames exist, last one wins (sorted order)
+    file_map = {}
+    duplicates = set()
+
+    for path in sorted(full_paths):
+        filename = os.path.basename(path)
+        if filename in file_map:
+            duplicates.add(filename)
+        file_map[filename] = path
+
+    # Warn about duplicates
+    if duplicates:
+        print(f"  Warning: Found duplicate filenames (using last in sorted order):")
+        for dup in sorted(duplicates):
+            print(f"    - {dup}")
+
+    return file_map
+
+
+def get_all_filenames_recursive(project_root, extensions, exclude_dirs=None):
+    """
+    Get all files with specified extensions recursively from project root.
+
+    Args:
+        project_root: Root directory to search
+        extensions: List of file extensions to match
+        exclude_dirs: List of directory names to exclude
+
+    Returns:
+        list: Filenames only (without paths) sorted alphabetically
+    """
+    file_map = get_all_files_with_paths(project_root, extensions, exclude_dirs)
+    return sorted(file_map.keys())
 
 
 def get_container_XML():
@@ -357,28 +420,57 @@ def build_epub(project_root, output_path):
 
     metadata = book_config.get('metadata', {})
 
-    # Get chapters
-    content_dir = os.path.join(project_root, 'content')
-    chapters = get_chapters(content_dir)
+    # Get discovery configuration with defaults
+    discovery_config = book_config.get('discovery', {})
+    exclude_dirs = discovery_config.get('exclude', [
+        '.git', '.venv', 'venv', 'node_modules', '__pycache__',
+        '.ebk', 'build', 'dist', 'context'
+    ])
+
+    # Determine content root from discovery config (default: project root)
+    content_root_config = discovery_config.get('root', '.')
+    if content_root_config == '.':
+        content_root = project_root
+    else:
+        content_root = os.path.join(project_root, content_root_config)
+
+    # Get extension configurations
+    content_extensions = discovery_config.get('content_extensions', ['.md'])
+    css_extensions = discovery_config.get('css_extensions', ['.css'])
+    image_extensions = discovery_config.get('image_extensions',
+                                           ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
+
+    # Get chapters with exclusion support
+    chapters = get_chapters(content_root, exclude_dirs)
 
     if not chapters:
-        raise ValueError("No markdown files found in content/")
+        raise ValueError(f"No markdown files found in {content_root}")
 
     print(f"  Found {len(chapters)} chapters")
 
-    # Get CSS files
-    css_dir = os.path.join(project_root, 'assets', 'css')
-    css_files = get_all_filenames(css_dir, ['.css'])
+    # Get CSS files with recursive discovery
+    css_files_map = get_all_files_with_paths(project_root, css_extensions, exclude_dirs)
+    css_files = list(css_files_map.keys())
 
     # Add default CSS from book config
     if 'default_css' in book_config:
         for css in book_config['default_css']:
             if css not in css_files:
-                css_files.append(css)
+                # Try to find it - might already be in the map
+                if css in css_files_map:
+                    css_files.append(css)
+                else:
+                    # Check legacy location for backward compatibility
+                    legacy_css_path = os.path.join(project_root, 'assets', 'css', css)
+                    if os.path.exists(legacy_css_path):
+                        css_files.append(css)
+                        css_files_map[css] = legacy_css_path
+                    else:
+                        print(f"  Warning: CSS file '{css}' not found")
 
-    # Get images
-    images_dir = os.path.join(project_root, 'assets', 'images')
-    images = get_all_filenames(images_dir, ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
+    # Get images with recursive discovery
+    images_map = get_all_files_with_paths(project_root, image_extensions, exclude_dirs)
+    images = list(images_map.keys())
 
     # Check for cover image
     cover_image = book_config.get('cover_image')
@@ -386,7 +478,7 @@ def build_epub(project_root, output_path):
     if cover_image and cover_image in images:
         has_cover = True
     elif cover_image:
-        print(f"  Warning: Cover image '{cover_image}' not found, skipping")
+        print(f"  Warning: Cover image '{cover_image}' not found")
 
     print("Processing chapters...")
 
@@ -424,17 +516,21 @@ def build_epub(project_root, output_path):
 
         # Add CSS files
         for css in css_files:
-            css_path = os.path.join(css_dir, css)
-            if os.path.exists(css_path):
+            css_path = css_files_map.get(css)
+            if css_path and os.path.exists(css_path):
                 with open(css_path, 'r') as f:
                     epub.writestr(f'OPS/css/{css}', f.read())
+            else:
+                print(f"  Warning: CSS file '{css}' not found, skipping")
 
         # Add images
         for img in images:
-            img_path = os.path.join(images_dir, img)
-            if os.path.exists(img_path):
+            img_path = images_map.get(img)
+            if img_path and os.path.exists(img_path):
                 with open(img_path, 'rb') as f:
                     epub.writestr(f'OPS/images/{img}', f.read())
+            else:
+                print(f"  Warning: Image file '{img}' not found, skipping")
 
         # Add package.opf (must be last to include all manifest items)
         package_opf = get_packageOPF_XML(chapters, images, css_files, metadata, has_cover)

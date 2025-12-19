@@ -7,8 +7,8 @@ This is a sample chapter to help you get started with ebk.
 ## Getting Started
 
 1. Edit `book.yaml` to set your book's metadata
-2. Add your content as markdown files in the `content/` directory
-3. Use numeric prefixes (01-, 02-, etc.) to control chapter ordering
+2. Add your content as markdown files (organize however you prefer!)
+3. Use numeric prefixes (01-, 02-, etc.) or frontmatter to control chapter ordering
 4. Run `ebk` in this directory to build your EPUB
 
 ## Using Jinja2 Templates
@@ -28,22 +28,29 @@ Chapters are automatically discovered and ordered by:
 2. Numeric prefix in filename (01-, 02-, etc.)
 3. Alphabetical order
 
-## Deep Nesting
+## Flexible Organization
 
-You can organize chapters into folders for complex books:
+ebk finds your markdown files by extension, so you can organize them however you like:
 
+**Flat structure:**
 ```
-content/
-├── 01-introduction.md
-├── 02-getting-started/
+01-introduction.md
+02-getting-started.md
+03-advanced.md
+```
+
+**Nested structure:**
+```
+01-introduction.md
+02-getting-started/
 │   ├── _chapter.md        # Folder intro
 │   ├── 01-installation.md
 │   └── 02-configuration.md
-└── 03-advanced/
+03-advanced/
     └── 01-plugins.md
 ```
 
-Files prefixed with `_chapter.md` serve as introductions for their folder.
+Files named `_chapter.md` serve as introductions for their folder (works at any nesting level).
 
 ## Next Steps
 
