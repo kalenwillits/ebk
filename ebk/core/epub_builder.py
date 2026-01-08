@@ -230,8 +230,11 @@ def get_TOCNCX_XML(chapters, metadata, has_cover):
     return doc.toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
 
 
-def get_packageOPF_XML(chapters, images, css_files, metadata, has_cover):
+def get_packageOPF_XML(chapters, images, css_files, metadata, has_cover, fonts=None):
     """Generate package.opf (manifest, spine, metadata)."""
+    if fonts is None:
+        fonts = []
+
     doc = minidom.Document()
 
     # Root package element
@@ -303,6 +306,29 @@ def get_packageOPF_XML(chapters, images, css_files, metadata, has_cover):
         item.setAttribute('id', f'css-{css}')
         item.setAttribute('href', f'css/{css}')
         item.setAttribute('media-type', 'text/css')
+        manifest.appendChild(item)
+
+    # Add fonts
+    for font in fonts:
+        item = doc.createElement('item')
+        # Sanitize font filename for ID
+        font_id = font.replace('.', '-').replace(' ', '-')
+        item.setAttribute('id', f'font-{font_id}')
+        item.setAttribute('href', f'fonts/{font}')
+
+        # Determine media type based on extension
+        if font.lower().endswith('.ttf'):
+            media_type = 'application/x-font-ttf'
+        elif font.lower().endswith('.otf'):
+            media_type = 'application/x-font-otf'
+        elif font.lower().endswith('.woff'):
+            media_type = 'application/font-woff'
+        elif font.lower().endswith('.woff2'):
+            media_type = 'font/woff2'
+        else:
+            media_type = 'application/octet-stream'
+
+        item.setAttribute('media-type', media_type)
         manifest.appendChild(item)
 
     # Add images
@@ -532,8 +558,21 @@ def build_epub(project_root, output_path):
             else:
                 print(f"  Warning: Image file '{img}' not found, skipping")
 
+        # Add embedded fonts from ebk resources
+        from pathlib import Path
+        ebk_package_dir = Path(__file__).parent.parent
+        fonts_dir = ebk_package_dir / 'resources' / 'fonts'
+        fonts = []
+
+        if fonts_dir.exists():
+            for font_file in fonts_dir.glob('*'):
+                if font_file.suffix.lower() in ['.ttf', '.otf', '.woff', '.woff2']:
+                    fonts.append(font_file.name)
+                    with open(font_file, 'rb') as f:
+                        epub.writestr(f'OPS/fonts/{font_file.name}', f.read())
+
         # Add package.opf (must be last to include all manifest items)
-        package_opf = get_packageOPF_XML(chapters, images, css_files, metadata, has_cover)
+        package_opf = get_packageOPF_XML(chapters, images, css_files, metadata, has_cover, fonts)
         epub.writestr('OPS/package.opf', package_opf)
 
     # Get file size

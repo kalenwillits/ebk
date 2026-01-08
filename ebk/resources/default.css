@@ -1,13 +1,35 @@
 /* Default CSS for ebk-generated EPUB books */
 
+/* Ubuntu Font Face Declarations */
+@font-face {
+    font-family: 'Ubuntu';
+    src: url('../fonts/Ubuntu-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Ubuntu';
+    src: url('../fonts/Ubuntu-Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Ubuntu Mono';
+    src: url('../fonts/UbuntuMono-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
-    font-family: Georgia, serif;
+    font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Cantarell, 'Helvetica Neue', sans-serif;
     line-height: 1.6;
     margin: 1em;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: Arial, sans-serif;
+    font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Cantarell, 'Helvetica Neue', sans-serif;
     font-weight: bold;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
@@ -35,7 +57,7 @@ p {
 }
 
 code {
-    font-family: 'Courier New', monospace;
+    font-family: 'Ubuntu Mono', 'Courier New', monospace;
     background-color: #f4f4f4;
     padding: 0.2em 0.4em;
     border-radius: 3px;
