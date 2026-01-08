@@ -55,28 +55,18 @@ def get_resources_path():
 
 def create_directory_structure(project_dir):
     """
-    Create suggested directory structure for new projects.
+    No directory structure created - ebk works recursively.
 
-    Note: This structure is just a suggestion for organization.
     ebk finds your content by file extension, not directory location,
-    so you can reorganize these files however you prefer after scaffolding.
+    so organize your files however you prefer.
     """
-    dirs = [
-        'pages',           # Suggested location for content
-        'context',         # For Jinja2 template variables
-        'assets/images',   # Suggested location for images
-        'assets/css',      # Suggested location for CSS
-    ]
-
-    for dir_name in dirs:
-        dir_path = os.path.join(project_dir, dir_name)
-        os.makedirs(dir_path, exist_ok=True)
+    # No longer creating subdirectories
+    pass
 
 
 def copy_and_populate_templates(project_dir, book_name):
-    """Copy template files and populate variables."""
+    """Copy essential template files and populate variables."""
     template_dir = get_template_path()
-    resources_dir = get_resources_path()
 
     # Get values for template variables
     slug = slugify(book_name)
@@ -103,76 +93,66 @@ def copy_and_populate_templates(project_dir, book_name):
     with open(os.path.join(project_dir, 'book.yaml'), 'w') as f:
         f.write(book_yaml_content)
 
-    # Copy and populate README.md
-    with open(template_dir / 'README.md', 'r') as f:
-        readme_content = f.read()
-
-    for var, value in template_vars.items():
-        readme_content = readme_content.replace(f'{{{var}}}', value)
-
-    with open(os.path.join(project_dir, 'README.md'), 'w') as f:
-        f.write(readme_content)
-
-    # Copy and populate chapter.md to content/
-    with open(template_dir / 'chapter.md', 'r') as f:
-        chapter_content = f.read()
-
-    for var, value in template_vars.items():
-        chapter_content = chapter_content.replace(f'{{{var}}}', value)
-
-    with open(os.path.join(project_dir, 'pages', '01-introduction.md'), 'w') as f:
-        f.write(chapter_content)
-
-    # Copy global.yaml to context/
-    shutil.copy(
-        template_dir / 'global.yaml',
-        os.path.join(project_dir, 'context', 'global.yaml')
-    )
-
-    # Copy default.css to assets/css/
-    shutil.copy(
-        resources_dir / 'default.css',
-        os.path.join(project_dir, 'assets', 'css', 'custom.css')
-    )
-
     # Create .ebk marker file
     with open(os.path.join(project_dir, '.ebk'), 'w') as f:
-        f.write('')  # Empty marker file
+        f.write(f"# ebk project: {book_name}\n")  # Marker file with comment
 
 
-def create_new_book(book_name):
-    """Create a new ebk project directory with all scaffolding."""
-    if not book_name or not book_name.strip():
-        raise ValueError("Book name cannot be empty")
+def create_new_book(project_path):
+    """
+    Create a new ebk project at the given path.
 
-    book_name = book_name.strip()
-    slug = slugify(book_name)
+    Supports:
+    - Current directory: '.'
+    - Absolute paths: '/home/user/my-book' or '~/books/novel'
+    - Relative paths: 'my-book' or '../other-book'
+    - Existing directories (will add .ebk marker and book.yaml)
 
-    if not slug:
-        raise ValueError(f"Invalid book name: '{book_name}'")
+    Args:
+        project_path: Path where the project should be created (can be name or path)
+    """
+    if not project_path or not project_path.strip():
+        raise ValueError("Project path cannot be empty")
 
-    # Create project directory
-    project_dir = os.path.join(os.getcwd(), slug)
+    project_path = project_path.strip()
 
-    if os.path.exists(project_dir):
-        raise FileExistsError(f"Directory '{slug}' already exists")
+    # Expand user home directory and resolve to absolute path
+    path = Path(project_path).expanduser().resolve()
 
-    print(f"Creating new book: {book_name}")
-    print(f"  Directory: {project_dir}")
+    # Determine book name from path or use provided name
+    if project_path in ['.', './']:
+        # Use current directory name as book name
+        book_name = path.name
+    else:
+        # Use the last component of the path as book name
+        book_name = path.name
 
-    # Create directory structure
-    os.makedirs(project_dir)
-    create_directory_structure(project_dir)
+    # Create directory if it doesn't exist
+    if not path.exists():
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+            print(f"Creating new book: {book_name}")
+            print(f"  Created directory: {path}")
+        except Exception as e:
+            raise OSError(f"Could not create directory '{path}': {e}")
+    else:
+        print(f"Creating new book: {book_name}")
+        print(f"  Using existing directory: {path}")
 
-    # Copy and populate templates
-    copy_and_populate_templates(project_dir, book_name)
+    # Check if already an ebk project
+    marker_file = path / ".ebk"
+    if marker_file.exists():
+        raise FileExistsError(f"Directory is already an ebk project")
 
-    print("  ✓ Created directory structure")
-    print("  ✓ Initialized book.yaml")
-    print("  ✓ Added sample content")
+    # Copy and populate templates (creates .ebk marker)
+    copy_and_populate_templates(str(path), book_name)
+
+    print("  ✓ Initialized ebk project")
+    print("  ✓ Created book.yaml")
     print()
+    print("Project ready! ebk works recursively, so organize your files however you prefer.")
     print("Next steps:")
-    print(f"  1. cd {slug}")
+    print(f"  1. cd {path.name if path != Path.cwd() else '.'}")
     print("  2. Edit book.yaml with your book metadata")
-    print("  3. Add your markdown content (organize however you prefer)")
+    print("  3. Add markdown files anywhere in the project")
     print("  4. Run 'ebk' to build your book")
