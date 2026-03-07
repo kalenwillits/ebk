@@ -7,6 +7,7 @@ import sys
 from ebk import __version__
 from ebk.core.project_structure import create_new_book
 from ebk.core.epub_builder import build_epub
+from ebk.core.pdf_builder import build_pdf
 
 
 def is_ebk_project():
@@ -14,30 +15,35 @@ def is_ebk_project():
     return os.path.exists('.ebk') and os.path.exists('book.yaml')
 
 
-def build_current_project():
-    """Build EPUB from current directory."""
+def build_current_project(pdf=False):
+    """Build EPUB or PDF from current directory."""
     if not is_ebk_project():
         print("Error: Not an ebk project directory.", file=sys.stderr)
         print("Run 'ebk <name>' to create a new project.", file=sys.stderr)
         sys.exit(1)
 
     try:
-        # Get output filename from book.yaml or use default
         import yaml
         with open('book.yaml', 'r') as f:
             config = yaml.safe_load(f)
 
-        output_filename = config.get('output', {}).get('filename')
-        if not output_filename:
-            # Default to directory name + .epub
-            output_filename = os.path.basename(os.getcwd()) + '.epub'
-
-        print(f"Building EPUB from current directory...")
-        build_epub(os.getcwd(), output_filename)
-        print(f"✓ Created {output_filename}")
+        if pdf:
+            output_filename = config.get('output', {}).get('pdf_filename')
+            if not output_filename:
+                output_filename = os.path.basename(os.getcwd()) + '.pdf'
+            print(f"Building PDF from current directory...")
+            build_pdf(os.getcwd(), output_filename)
+            print(f"✓ Created {output_filename}")
+        else:
+            output_filename = config.get('output', {}).get('filename')
+            if not output_filename:
+                output_filename = os.path.basename(os.getcwd()) + '.epub'
+            print(f"Building EPUB from current directory...")
+            build_epub(os.getcwd(), output_filename)
+            print(f"✓ Created {output_filename}")
 
     except Exception as e:
-        print(f"Error building EPUB: {e}", file=sys.stderr)
+        print(f"Error building {'PDF' if pdf else 'EPUB'}: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -61,6 +67,12 @@ def main():
         version=f'ebk {__version__}'
     )
 
+    parser.add_argument(
+        '--pdf',
+        action='store_true',
+        help='Export to PDF instead of EPUB'
+    )
+
     args = parser.parse_args()
 
     if args.name:
@@ -72,7 +84,7 @@ def main():
             sys.exit(1)
     else:
         # Build current project
-        build_current_project()
+        build_current_project(pdf=args.pdf)
 
 
 if __name__ == "__main__":

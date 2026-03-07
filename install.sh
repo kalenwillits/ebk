@@ -27,10 +27,7 @@ echo "Creating system-wide command..."
 sudo tee "$INSTALL_DIR/ebk" > /dev/null << EOF
 #!/bin/bash
 # ebk wrapper script
-SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$PWD"
-source "\$PROJECT_DIR/$VENV_DIR/bin/activate"
-python3 -m src.cli "\$@"
+exec "$PWD/$VENV_DIR/bin/ebk" "\$@"
 EOF
 
 sudo chmod +x "$INSTALL_DIR/ebk"
