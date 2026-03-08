@@ -8,6 +8,7 @@ from ebk import __version__
 from ebk.core.project_structure import create_new_book
 from ebk.core.epub_builder import build_epub
 from ebk.core.pdf_builder import build_pdf
+from ebk.core.html_builder import build_html
 
 
 def is_ebk_project():
@@ -15,8 +16,8 @@ def is_ebk_project():
     return os.path.exists('.ebk') and os.path.exists('book.yaml')
 
 
-def build_current_project(pdf=False):
-    """Build EPUB or PDF from current directory."""
+def build_current_project(pdf=False, html=False):
+    """Build EPUB, PDF, or HTML from current directory."""
     if not is_ebk_project():
         print("Error: Not an ebk project directory.", file=sys.stderr)
         print("Run 'ebk <name>' to create a new project.", file=sys.stderr)
@@ -34,6 +35,11 @@ def build_current_project(pdf=False):
             print(f"Building PDF from current directory...")
             build_pdf(os.getcwd(), output_filename)
             print(f"✓ Created {output_filename}")
+        elif html:
+            output_dir = config.get('output', {}).get('html_dir', 'html')
+            print(f"Building HTML from current directory...")
+            build_html(os.getcwd(), output_dir)
+            print(f"✓ Created {output_dir}/")
         else:
             output_filename = config.get('output', {}).get('filename')
             if not output_filename:
@@ -43,7 +49,7 @@ def build_current_project(pdf=False):
             print(f"✓ Created {output_filename}")
 
     except Exception as e:
-        print(f"Error building {'PDF' if pdf else 'EPUB'}: {e}", file=sys.stderr)
+        print(f"Error building {'PDF' if pdf else 'HTML' if html else 'EPUB'}: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -73,6 +79,12 @@ def main():
         help='Export to PDF instead of EPUB'
     )
 
+    parser.add_argument(
+        '--html',
+        action='store_true',
+        help='Export to HTML directory instead of EPUB'
+    )
+
     args = parser.parse_args()
 
     if args.name:
@@ -84,7 +96,7 @@ def main():
             sys.exit(1)
     else:
         # Build current project
-        build_current_project(pdf=args.pdf)
+        build_current_project(pdf=args.pdf, html=args.html)
 
 
 if __name__ == "__main__":

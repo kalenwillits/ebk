@@ -61,6 +61,8 @@ That's it! Your EPUB will be generated in the project root.
 ```bash
 ebk "Book Name"    # Create new book project
 ebk                # Build EPUB from current directory
+ebk --html         # Build HTML output instead of EPUB
+ebk --pdf          # Build PDF instead of EPUB
 ebk --version      # Show version
 ebk --help         # Show help
 ```
@@ -229,6 +231,71 @@ Add your own stylesheets to `assets/css/` and reference them in `book.yaml`:
 default_css:
   - "custom.css"
   - "code-highlighting.css"
+```
+
+### Tailwind CSS
+
+ebk supports Tailwind CSS class aliases via the `tw` key in `book.yaml`. Define named class strings once and reference them with Jinja2 in your markdown.
+
+**book.yaml:**
+
+```yaml
+tw:
+  card: "rounded-lg shadow p-6 bg-white"
+  hero: "text-4xl font-bold text-center py-12"
+  btn: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+```
+
+**In your markdown:**
+
+```markdown
+<div class="{{ tw.card }}">
+  <h1 class="{{ tw.hero }}">{{ book.title }}</h1>
+  <a href="#start" class="{{ tw.btn }}">Get Started</a>
+</div>
+```
+
+To generate the Tailwind CSS file, point the Tailwind CLI at your markdown files and include the output in `default_css`:
+
+```js
+// tailwind.config.js
+module.exports = {
+  content: ["**/*.md", "**/*.yaml"],
+}
+```
+
+```bash
+npx tailwindcss -o assets/css/tailwind.css --minify
+ebk --html
+```
+
+> **Note:** EPUB reader CSS support varies widely. Tailwind works best with the `--html` output, which targets modern browsers. For e-ink readers, stick to conventional CSS.
+
+### HTML Output
+
+Build a directory of HTML files instead of an EPUB:
+
+```bash
+ebk --html
+```
+
+Outputs to `html/` by default:
+
+```
+html/
+├── index.html       # Table of contents
+├── s00000.html      # Chapter files
+├── s00001.html
+├── css/             # Stylesheets (copied from project)
+└── images/          # Images (copied from project)
+```
+
+To change the output directory, set `html_dir` in `book.yaml`:
+
+```yaml
+output:
+  filename: "my-book.epub"
+  html_dir: "dist"
 ```
 
 ### Cover Image

@@ -109,6 +109,10 @@ def load_context(project_root, chapter_path, book_config):
     if 'metadata' in book_config:
         context['book'] = book_config['metadata']
 
+    # Add Tailwind class aliases
+    if 'tw' in book_config:
+        context['tw'] = book_config['tw']
+
     return context
 
 
