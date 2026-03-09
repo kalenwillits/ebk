@@ -1,10 +1,33 @@
 """PDF generation from ebk project."""
 
 import os
+import re
 import markdown
 import yaml
 from ebk.core.markdown_processor import get_chapters, get_chapter_title
 from ebk.core.template_engine import render_chapter
+from ebk.core.epub_builder import normalize_metadata
+
+
+def _rewrite_img_srcs(html, images_map):
+    """
+    Rewrite <img src="..."> paths to absolute file:// URIs.
+
+    Matches by filename so images are found regardless of the relative path
+    used in the markdown source or the chapter's subdirectory depth.
+    """
+    def replace_src(m):
+        src = m.group(1)
+        # Skip already-absolute URLs (http://, https://, file://, data:)
+        if re.match(r'^(?:https?|file|data):', src):
+            return m.group(0)
+        basename = os.path.basename(src)
+        abs_path = images_map.get(basename)
+        if abs_path and os.path.exists(abs_path):
+            return f'src="{abs_path}"'
+        return m.group(0)
+
+    return re.sub(r'src="([^"]*)"', replace_src, html)
 
 
 def build_pdf(project_root, output_path):
@@ -35,7 +58,7 @@ def build_pdf(project_root, output_path):
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)
 
-    metadata = book_config.get('metadata', {})
+    metadata = normalize_metadata(book_config.get('metadata', {}))
 
     discovery_config = book_config.get('discovery', {})
     exclude_dirs = discovery_config.get('exclude', [
@@ -53,10 +76,13 @@ def build_pdf(project_root, output_path):
 
     print(f"  Found {len(chapters)} chapters")
 
-    # Build CSS from project files
+    # Build CSS and image file maps from project files
     from ebk.core.epub_builder import get_all_files_with_paths
     css_extensions = discovery_config.get('css_extensions', ['.css'])
     css_files_map = get_all_files_with_paths(project_root, css_extensions, exclude_dirs)
+
+    image_extensions = discovery_config.get('image_extensions', ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
+    images_map = get_all_files_with_paths(project_root, image_extensions, exclude_dirs)
 
     # Collect CSS content
     css_content = ""
@@ -93,6 +119,7 @@ def build_pdf(project_root, output_path):
             ])
             html_body = md.convert(rendered_md)
 
+            html_body = _rewrite_img_srcs(html_body, images_map)
             chapter_html_parts.append(
                 f'<section id="{i}" class="chapter">\n{html_body}\n</section>'
             )
@@ -117,6 +144,7 @@ def build_pdf(project_root, output_path):
     pre {{ background: #f4f4f4; padding: 1em; overflow-x: auto; }}
     code {{ font-family: monospace; }}
     #toc ol {{ line-height: 2; }}
+    img {{ max-width: 100%; height: auto; }}
     {css_content}
   </style>
 </head>

@@ -86,6 +86,31 @@ def get_all_filenames_recursive(project_root, extensions, exclude_dirs=None):
     return sorted(file_map.keys())
 
 
+_METADATA_KEY_MAP = {
+    'title': 'dc:title',
+    'author': 'dc:creator',
+    'creator': 'dc:creator',
+    'language': 'dc:language',
+    'identifier': 'dc:identifier',
+    'date': 'dc:date',
+    'publisher': 'dc:publisher',
+    'description': 'dc:description',
+    'subject': 'dc:subject',
+    'source': 'dc:source',
+    'contributor': 'dc:contributor',
+    'rights': 'dc:rights',
+}
+
+
+def normalize_metadata(metadata):
+    """Map short metadata keys (title, author, ...) to their dc: equivalents."""
+    normalized = {}
+    for key, value in metadata.items():
+        normalized_key = _METADATA_KEY_MAP.get(key, key)
+        normalized[normalized_key] = value
+    return normalized
+
+
 def get_container_XML():
     """Generate META-INF/container.xml."""
     return '''<?xml version="1.0"?>
@@ -444,7 +469,7 @@ def build_epub(project_root, output_path):
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)
 
-    metadata = book_config.get('metadata', {})
+    metadata = normalize_metadata(book_config.get('metadata', {}))
 
     # Get discovery configuration with defaults
     discovery_config = book_config.get('discovery', {})

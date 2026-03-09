@@ -59,10 +59,14 @@ def should_exclude_path(path, exclude_patterns, search_root):
         # On Windows, relpath can fail if paths are on different drives
         return False
 
-    # Check if any part of the path matches exclusion patterns
+    # Check if any part of the path matches exclusion patterns.
+    # A pattern like "resources" also matches ".resources" (dot-prefixed hidden dirs).
     path_parts = rel_path.split(os.sep)
     for part in path_parts:
         if part in exclude_patterns:
+            return True
+        # Also match hidden directories: ".resources" matches pattern "resources"
+        if part.startswith('.') and part[1:] in exclude_patterns:
             return True
 
     return False
