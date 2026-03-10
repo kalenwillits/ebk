@@ -1,16 +1,16 @@
 # ebk - E-Book CLI
 
-A simple, opinionated CLI utility for managing EPUB book projects with markdown, Jinja2 templating, and deep nesting support.
+A simple, opinionated CLI utility for building EPUB, PDF, and HTML books from markdown with Jinja2 templating.
 
 ## Features
 
-- **Simple CLI**: Two commands - create new books and build EPUBs
+- **Simple CLI**: Two commands — create new books and build output
 - **Markdown-based**: Write your book in markdown with full GitHub-flavored markdown support
 - **Jinja2 templating**: Use variables, conditionals, and loops in your content
+- **Feature flags**: Conditionally render content based on build flags (e.g. presentation vs. print mode)
 - **Deep nesting**: Organize complex books with unlimited folder nesting
-- **Opinionated structure**: Clear, consistent project layout
+- **Multiple output formats**: EPUB, PDF, and HTML
 - **Single binary**: Package as standalone executable with PyInstaller
-- **Based on proven tech**: Built on mark2epub's EPUB generation logic
 
 ## Quick Start
 
@@ -19,7 +19,6 @@ A simple, opinionated CLI utility for managing EPUB book projects with markdown,
 #### From Source
 
 ```bash
-# Clone and install
 git clone https://github.com/anthropics/ebk.git
 cd ebk
 pip install -r requirements.txt
@@ -39,20 +38,13 @@ pip install ebk
 ### Create Your First Book
 
 ```bash
-# Create a new book project
 ebk "My First Book"
-
-# Navigate to the project
 cd my-first-book
-
-# Edit book.yaml with your metadata
-# Add your content to pages/
-# Run ebk to build
-
+# Add your markdown files, edit book.yaml
 ebk
 ```
 
-That's it! Your EPUB will be generated in the project root.
+Your EPUB will be generated in the project root.
 
 ## Usage
 
@@ -61,30 +53,68 @@ That's it! Your EPUB will be generated in the project root.
 ```bash
 ebk "Book Name"    # Create new book project
 ebk                # Build EPUB from current directory
-ebk --html         # Build HTML output instead of EPUB
-ebk --pdf          # Build PDF instead of EPUB
+ebk --html         # Build HTML output
+ebk --pdf          # Build PDF
 ebk --version      # Show version
 ebk --help         # Show help
 ```
 
-## Project Structure
+### PDF Options
 
-When you create a new book with `ebk "My Book"`, this structure is created:
+```bash
+ebk --pdf                        # Default: A4, 11pt
+ebk --pdf --font-size 14         # 14pt body text
+ebk --pdf --landscape            # A4 landscape orientation
+ebk --pdf --font-size 12 --landscape
+```
+
+### Feature Flags
+
+Pass one or more flags to conditionally render content:
+
+```bash
+ebk -f present                   # Enable the "present" flag
+ebk --flag present               # Same, long form
+ebk -f present -f draft          # Multiple flags
+ebk --pdf -f present --landscape # Combine with other options
+```
+
+Flags are available in any markdown file as a Jinja2 set:
+
+```markdown
+{% if 'present' in flags %}
+<div style="page-break-before: always;"></div>
+{% endif %}
+
+{% if 'present' not in flags %}
+> **Instructor Note:** Detailed explanation for self-study readers.
+{% endif %}
+```
+
+## Project Structure
 
 ```
 my-book/
-├── book.yaml              # Book metadata and configuration
-├── pages/                 # Your markdown chapters
-│   └── 01-introduction.md
-├── context/               # Jinja2 context files
-│   └── global.yaml
-├── assets/
-│   ├── images/           # Book images
-│   └── css/              # Custom stylesheets
-│       └── custom.css
-├── .ebk                  # Project marker file
-└── README.md             # Project-specific guide
+├── book.yaml         # Book metadata and configuration
+├── .ebk              # Project marker file
+├── README.md         # Project-specific guide
+└── custom.css        # Custom stylesheet
 ```
+
+ebk discovers content recursively — add markdown files anywhere in the project. Use numeric prefixes or frontmatter `order:` to control chapter order.
+
+```
+my-book/
+├── 01-introduction.md
+├── 02-getting-started.md
+├── 03-advanced/
+│   ├── _chapter.md          # Folder introduction
+│   ├── 01-configuration.md
+│   └── 02-deployment.md
+└── 99-appendix.md
+```
+
+Files named `_chapter.md` serve as introductions for their folder.
 
 ## Configuration (book.yaml)
 
@@ -93,50 +123,48 @@ metadata:
   title: "My Book"
   author: "Author Name"
   language: "en-US"
-  identifier: "unique-id"
+  identifier: "unique-uuid"
   date: "2025-12-18"
   publisher: ""
   description: "Book description"
   subject: ""
 
-# Optional cover image (relative to assets/images/)
+# Optional cover image (ebk finds it by extension anywhere in the project)
 # cover_image: "cover.jpg"
 
 # CSS files to include
 default_css:
   - "custom.css"
 
-# Chapter discovery: "auto" or "manual"
-content:
-  discovery: "auto"
+# Content discovery
+discovery:
+  root: "."             # Search from project root
+  exclude:
+    - ".git"
+    - "build"
+    - "dist"
+    - "context"
 
-# Output filename
+# Output filenames
 output:
   filename: "my-book.epub"
+  pdf_filename: "my-book.pdf"  # optional, defaults to project dir name
+  html_dir: "html"             # optional, defaults to "html"
 ```
 
 ## Writing Content
 
-### Organizing Chapters
+### Chapter Ordering
 
-Use numeric prefixes to control chapter order:
+Use numeric prefixes:
 
 ```
-pages/
-├── 01-introduction.md
-├── 02-getting-started.md
-├── 03-advanced-topics/
-│   ├── _chapter.md        # Folder introduction
-│   ├── 01-configuration.md
-│   └── 02-deployment.md
-└── 99-appendix.md
+01-introduction.md
+02-chapter-two.md
+03-conclusion.md
 ```
 
-Files named `_chapter.md` serve as introductions for their folder.
-
-### Alternative Ordering
-
-Use YAML frontmatter with `order:` field:
+Or use YAML frontmatter:
 
 ```markdown
 ---
@@ -149,33 +177,21 @@ order: 5
 
 ### Markdown Features
 
-Full GitHub-flavored markdown support:
-
-- **Headers**: `# H1` through `###### H6`
-- **Emphasis**: `*italic*`, `**bold**`, `***bold italic***`
-- **Lists**: Ordered and unordered, with nesting
-- **Code blocks**: With syntax highlighting
-- **Tables**: GitHub-style tables
-- **Images**: `![alt](path)`
-- **Links**: `[text](url)`
-- **Footnotes**: `[^1]` with `[^1]: Definition`
+Full GitHub-flavored markdown support: headers, emphasis, ordered/unordered lists, fenced code blocks with syntax highlighting, tables, images, links, footnotes, and inline HTML.
 
 ### Jinja2 Templating
 
-Use variables in your markdown:
+Variables are rendered in markdown before HTML conversion:
 
 ```markdown
 # Welcome to {{ book.title }}
 
-This guide was written by {{ book.author }}.
-
-Build date: {{ build_date }}
-Version: {{ version }}
+Written by {{ book.author }}. Built on {{ build_date }}.
 ```
 
 #### Context Files
 
-**context/global.yaml** - Variables for all chapters:
+**`context/global.yaml`** — Variables available in all chapters:
 
 ```yaml
 product_name: "MyApp"
@@ -183,169 +199,148 @@ version: "2.0"
 website: "https://example.com"
 ```
 
-**context/chapter-name.yaml** - Chapter-specific overrides:
-
-```yaml
-custom_var: "Chapter-specific value"
-```
+**`context/chapter-name.yaml`** — Per-chapter overrides (filename matches the chapter's `.md` filename without extension).
 
 **Context merge order** (later overrides earlier):
-1. Built-in variables (`ebk_version`, `build_date`)
-2. Global context (`context/global.yaml`)
-3. Chapter-specific context (`context/{chapter-name}.yaml`)
-4. Book metadata (`book.title`, `book.author`, etc.)
+1. Built-in: `ebk_version`, `build_date`
+2. Global: `context/global.yaml`
+3. Chapter-specific: `context/{chapter-name}.yaml`
+4. Book metadata: `book.title`, `book.author`, etc.
+5. Feature flags: `flags` (set of active flag strings)
 
 #### Jinja2 Features
 
 ```markdown
-# Conditionals
 {% if product_name == "MyApp" %}
-Special content for MyApp users!
+Special content for MyApp!
 {% endif %}
 
-# Loops
 {% for item in items %}
 - {{ item }}
 {% endfor %}
 
-# Variables
 {{ variable_name }}
 ```
 
-## Building Your Book
+## Output Formats
+
+### EPUB
 
 ```bash
-# In your book project directory
 ebk
 ```
 
-The EPUB will be generated in the project root with the name specified in `book.yaml`.
+Generates a valid EPUB 3 file with backward-compatible EPUB 2 TOC, embedded fonts, and all images and CSS bundled.
 
-## Advanced Usage
-
-### Custom CSS
-
-Add your own stylesheets to `assets/css/` and reference them in `book.yaml`:
-
-```yaml
-default_css:
-  - "custom.css"
-  - "code-highlighting.css"
-```
-
-### Tailwind CSS
-
-ebk supports Tailwind CSS class aliases via the `tw` key in `book.yaml`. Define named class strings once and reference them with Jinja2 in your markdown.
-
-**book.yaml:**
-
-```yaml
-tw:
-  card: "rounded-lg shadow p-6 bg-white"
-  hero: "text-4xl font-bold text-center py-12"
-  btn: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-```
-
-**In your markdown:**
-
-```markdown
-<div class="{{ tw.card }}">
-  <h1 class="{{ tw.hero }}">{{ book.title }}</h1>
-  <a href="#start" class="{{ tw.btn }}">Get Started</a>
-</div>
-```
-
-To generate the Tailwind CSS file, point the Tailwind CLI at your markdown files and include the output in `default_css`:
-
-```js
-// tailwind.config.js
-module.exports = {
-  content: ["**/*.md", "**/*.yaml"],
-}
-```
+### PDF
 
 ```bash
-npx tailwindcss -o assets/css/tailwind.css --minify
-ebk --html
+ebk --pdf
+ebk --pdf --font-size 14
+ebk --pdf --landscape
 ```
 
-> **Note:** EPUB reader CSS support varies widely. Tailwind works best with the `--html` output, which targets modern browsers. For e-ink readers, stick to conventional CSS.
+Requires `weasyprint` (`pip install weasyprint`). Uses A4 page size by default.
 
-### HTML Output
-
-Build a directory of HTML files instead of an EPUB:
+### HTML
 
 ```bash
 ebk --html
 ```
 
-Outputs to `html/` by default:
+Outputs to `html/` (configurable via `output.html_dir` in `book.yaml`):
 
 ```
 html/
 ├── index.html       # Table of contents
-├── s00000.html      # Chapter files
+├── s00000.html
 ├── s00001.html
-├── css/             # Stylesheets (copied from project)
-└── images/          # Images (copied from project)
+├── css/
+└── images/
 ```
 
-To change the output directory, set `html_dir` in `book.yaml`:
+## Advanced Usage
+
+### Feature Flags
+
+Feature flags enable conditional rendering at build time — useful for producing different versions of the same content (e.g. presentation slides vs. print handout, draft vs. published).
+
+Flags are passed via `-f`/`--flag` and are available in templates as a Python set:
+
+```bash
+ebk --pdf -f present --landscape --font-size 16
+```
+
+```markdown
+# {{ book.title }}
+
+{% if 'present' in flags %}
+<div class="slide-break"></div>
+{% endif %}
+
+{% if 'present' not in flags %}
+This section contains detailed background reading not covered in the presentation.
+{% endif %}
+```
+
+Multiple flags compose naturally:
+
+```bash
+ebk -f present -f instructor
+```
+
+```markdown
+{% if 'instructor' in flags %}
+> **Answer key:** The correct response is C.
+{% endif %}
+```
+
+### Tailwind CSS
+
+Define Tailwind class aliases in `book.yaml` and use them in markdown:
 
 ```yaml
-output:
-  filename: "my-book.epub"
-  html_dir: "dist"
+tw:
+  card: "rounded-lg shadow p-6 bg-white"
+  hero: "text-4xl font-bold text-center"
 ```
+
+```markdown
+<div class="{{ tw.card }}">
+  <h1 class="{{ tw.hero }}">{{ book.title }}</h1>
+</div>
+```
+
+Generate the Tailwind CSS file with the Tailwind CLI and include it in `default_css`.
+
+> **Note:** EPUB reader CSS support varies. Tailwind works best with `--html` output. For e-ink readers, use conventional CSS.
 
 ### Cover Image
 
-Add a cover image to `assets/images/` and reference it in `book.yaml`:
+Place an image anywhere in the project and reference it in `book.yaml`:
 
 ```yaml
 cover_image: "cover.jpg"
 ```
 
-Supported formats: JPG, PNG, GIF, SVG
-
-### Manual Chapter List
-
-For fine-grained control, use manual chapter discovery:
-
-```yaml
-content:
-  discovery: "manual"
-  chapters:
-    - path: "01-introduction.md"
-    - path: "02-chapter.md"
-      css: "special.css"  # Per-chapter CSS override
-    - path: "03-nested/_chapter.md"
-```
+Supported formats: JPG, PNG, GIF, SVG.
 
 ## Building Standalone Binary
 
 ```bash
-./build.sh
+./build.sh    # Creates dist/ebk
+./install.sh  # Copies to /usr/local/bin/ebk
 ```
-
-This creates a single executable at `dist/ebk`.
-
-### Installing System-Wide
-
-```bash
-./install.sh
-```
-
-This copies the binary to `/usr/local/bin/ebk`.
 
 ## Development
 
 ### Requirements
 
 - Python 3.7+
-- markdown >= 3.1
-- Jinja2 >= 3.0
-- PyYAML >= 6.0
+- `markdown >= 3.1`
+- `Jinja2 >= 3.0`
+- `PyYAML >= 6.0`
+- `weasyprint` (PDF only)
 
 ### Setup
 
@@ -366,100 +361,45 @@ pytest
 
 ```
 ebk/
-├── ebk/                  # Main package
-│   ├── cli.py           # CLI router
-│   ├── core/
-│   │   ├── project_structure.py   # Project scaffolding
-│   │   ├── markdown_processor.py  # Chapter discovery
-│   │   ├── template_engine.py     # Jinja2 integration
-│   │   └── epub_builder.py        # EPUB generation
-│   ├── templates/       # Default templates
-│   └── resources/       # Default CSS
-├── ebk.spec            # PyInstaller config
-├── build.sh            # Build script
-└── install.sh          # Install script
+├── ebk/
+│   ├── cli.py                       # CLI entry point
+│   └── core/
+│       ├── epub_builder.py          # EPUB generation
+│       ├── pdf_builder.py           # PDF generation (weasyprint)
+│       ├── html_builder.py          # HTML generation
+│       ├── markdown_processor.py    # Chapter discovery and ordering
+│       ├── template_engine.py       # Jinja2 rendering
+│       └── project_structure.py     # Project scaffolding
+├── ebk.spec                         # PyInstaller config
+├── build.sh
+└── install.sh
 ```
 
 ## How It Works
 
-1. **Project creation**: `ebk "Book Name"` creates opinionated directory structure
-2. **Chapter discovery**: Recursively scans `pages/` for markdown files
+1. **Project creation**: `ebk "Book Name"` initializes `book.yaml` and project files
+2. **Chapter discovery**: Recursively scans the project for markdown files
 3. **Ordering**: Uses numeric prefixes or frontmatter `order:` field
-4. **Jinja2 rendering**: Applies templates BEFORE markdown conversion
-5. **Markdown conversion**: Converts to XHTML with extensions (tables, code, etc.)
-6. **EPUB generation**: Creates valid EPUB 3 with backward compatibility
-7. **Output**: Single `.epub` file in project root
+4. **Jinja2 rendering**: Applies templates before markdown conversion; injects `flags`, `book`, context variables
+5. **Markdown conversion**: Converts to HTML/XHTML with tables, code highlighting, footnotes
+6. **Output generation**: EPUB 3, PDF (weasyprint), or HTML directory
 
-## Credits
+## Troubleshooting
 
-Built on [mark2epub](https://github.com/AlexPof/mark2epub) by AlexPof for EPUB generation logic.
+**"Error: Not an ebk project"** — Make sure you're in a directory with `.ebk` and `book.yaml`.
+
+**"No markdown files found"** — Check your `discovery.root` and `discovery.exclude` settings in `book.yaml`.
+
+**"Error parsing book.yaml"** — Verify YAML syntax with a YAML validator.
+
+**Template errors** — Check Jinja2 syntax; the error message includes the line number.
+
+**PDF export fails** — Install weasyprint: `pip install weasyprint`.
 
 ## License
 
 MIT License
 
-## Contributing
+## Credits
 
-Contributions welcome! Please open an issue or pull request.
-
-## Troubleshooting
-
-### "Error: Not an ebk project"
-
-Make sure you're in a directory with a `.ebk` file and `book.yaml`.
-
-### "No markdown files found"
-
-Check that your markdown files are in the `pages/` directory.
-
-### "Error parsing book.yaml"
-
-Verify your YAML syntax. Use a YAML validator if needed.
-
-### Template errors
-
-Check your Jinja2 syntax. The error message will include the line number.
-
-### Cover image not showing
-
-Ensure the cover image path in `book.yaml` matches the filename in `assets/images/`.
-
-## Examples
-
-See the `examples/` directory for sample projects demonstrating various features.
-
-## FAQ
-
-**Q: Can I use custom fonts?**
-A: Not in v1.0. Use CSS to reference system fonts.
-
-**Q: Can I export to PDF or other formats?**
-A: Not currently. EPUB only for now.
-
-**Q: Can I use HTML in my markdown?**
-A: Yes, markdown supports inline HTML.
-
-**Q: How do I add a table of contents?**
-A: The TOC is automatically generated from your chapters.
-
-**Q: Can I customize the TOC?**
-A: Not in v1.0. The TOC is auto-generated.
-
-**Q: What Python version do I need?**
-A: Python 3.7 or higher.
-
-## Roadmap
-
-Future enhancements (not in v1.0):
-
-- PDF export
-- Live preview mode
-- Custom fonts
-- Math notation support
-- Plugin system
-- Multiple output formats
-
-## Support
-
-- GitHub Issues: [github.com/anthropics/ebk/issues](https://github.com/anthropics/ebk/issues)
-- Documentation: [github.com/anthropics/ebk](https://github.com/anthropics/ebk)
+EPUB generation logic based on [mark2epub](https://github.com/AlexPof/mark2epub) by AlexPof.

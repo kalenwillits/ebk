@@ -16,8 +16,11 @@ def is_ebk_project():
     return os.path.exists('.ebk') and os.path.exists('book.yaml')
 
 
-def build_current_project(pdf=False, html=False):
+def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None):
     """Build EPUB, PDF, or HTML from current directory."""
+    if flags is None:
+        flags = []
+
     if not is_ebk_project():
         print("Error: Not an ebk project directory.", file=sys.stderr)
         print("Run 'ebk <name>' to create a new project.", file=sys.stderr)
@@ -33,19 +36,19 @@ def build_current_project(pdf=False, html=False):
             if not output_filename:
                 output_filename = os.path.basename(os.getcwd()) + '.pdf'
             print(f"Building PDF from current directory...")
-            build_pdf(os.getcwd(), output_filename)
+            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags)
             print(f"✓ Created {output_filename}")
         elif html:
             output_dir = config.get('output', {}).get('html_dir', 'html')
             print(f"Building HTML from current directory...")
-            build_html(os.getcwd(), output_dir)
+            build_html(os.getcwd(), output_dir, flags=flags)
             print(f"✓ Created {output_dir}/")
         else:
             output_filename = config.get('output', {}).get('filename')
             if not output_filename:
                 output_filename = os.path.basename(os.getcwd()) + '.epub'
             print(f"Building EPUB from current directory...")
-            build_epub(os.getcwd(), output_filename)
+            build_epub(os.getcwd(), output_filename, flags=flags)
             print(f"✓ Created {output_filename}")
 
     except Exception as e:
@@ -85,6 +88,29 @@ def main():
         help='Export to HTML directory instead of EPUB'
     )
 
+    parser.add_argument(
+        '--font-size',
+        type=int,
+        default=11,
+        metavar='PT',
+        help='PDF font size in pt (default: 11)'
+    )
+
+    parser.add_argument(
+        '--landscape',
+        action='store_true',
+        help='Export PDF in landscape orientation'
+    )
+
+    parser.add_argument(
+        '--flag', '-f',
+        action='append',
+        dest='flags',
+        default=[],
+        metavar='FLAG',
+        help='Enable a feature flag for conditional rendering (repeatable, e.g. -f present)'
+    )
+
     args = parser.parse_args()
 
     if args.name:
@@ -96,7 +122,13 @@ def main():
             sys.exit(1)
     else:
         # Build current project
-        build_current_project(pdf=args.pdf, html=args.html)
+        build_current_project(
+            pdf=args.pdf,
+            html=args.html,
+            font_size=args.font_size,
+            landscape=args.landscape,
+            flags=args.flags,
+        )
 
 
 if __name__ == "__main__":

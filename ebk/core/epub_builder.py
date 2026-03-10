@@ -145,6 +145,8 @@ def get_coverpage_XML(cover_image, css_files):
 
 def get_TOC_XML(css_files, chapters, has_cover):
     """Generate TOC.xhtml (EPUB 3 navigation)."""
+    from html import escape as html_escape
+
     css_links = '\n'.join([
         f'  <link rel="stylesheet" type="text/css" href="css/{css}" />'
         for css in css_files
@@ -157,7 +159,7 @@ def get_TOC_XML(css_files, chapters, has_cover):
         nav_items.append('    <li><a href="titlepage.xhtml">Cover</a></li>')
 
     for i, chapter in enumerate(chapters):
-        title = get_chapter_title(chapter)
+        title = html_escape(get_chapter_title(chapter))
         filename = f's{i:05d}.xhtml'
         nav_items.append(f'    <li><a href="{filename}">{title}</a></li>')
 
@@ -273,6 +275,7 @@ def get_packageOPF_XML(chapters, images, css_files, metadata, has_cover, fonts=N
     meta_elem = doc.createElement('metadata')
     meta_elem.setAttribute('xmlns:dc', 'http://purl.org/dc/elements/1.1/')
     meta_elem.setAttribute('xmlns:opf', 'http://www.idpf.org/2007/opf')
+    meta_elem.setAttribute('xmlns:dcterms', 'http://purl.org/dc/terms/')
     package.appendChild(meta_elem)
 
     # Add DC metadata
@@ -290,6 +293,14 @@ def get_packageOPF_XML(chapters, images, css_files, metadata, has_cover, fonts=N
                 elem.setAttribute('id', 'BookID')
             elem.appendChild(doc.createTextNode(str(value)))
             meta_elem.appendChild(elem)
+
+    # Required by EPUB 3.0: dcterms:modified timestamp
+    from datetime import datetime, timezone
+    modified = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    meta_modified = doc.createElement('meta')
+    meta_modified.setAttribute('property', 'dcterms:modified')
+    meta_modified.appendChild(doc.createTextNode(modified))
+    meta_elem.appendChild(meta_modified)
 
     # Manifest section
     manifest = doc.createElement('manifest')
@@ -447,13 +458,14 @@ def convert_chapter_to_xhtml(md_content, css_files):
     return xhtml
 
 
-def build_epub(project_root, output_path):
+def build_epub(project_root, output_path, flags=None):
     """
     Build EPUB from ebk project directory.
 
     Args:
         project_root: Root directory of ebk project
         output_path: Path for output .epub file
+        flags: List of active feature flag strings for conditional rendering
 
     Raises:
         FileNotFoundError: If required files missing
@@ -469,6 +481,7 @@ def build_epub(project_root, output_path):
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)
 
+    book_config['flags'] = flags or []
     metadata = normalize_metadata(book_config.get('metadata', {}))
 
     # Get discovery configuration with defaults

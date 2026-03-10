@@ -30,13 +30,16 @@ def _rewrite_img_srcs(html, images_map):
     return re.sub(r'src="([^"]*)"', replace_src, html)
 
 
-def build_pdf(project_root, output_path):
+def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None):
     """
     Build PDF from ebk project directory.
 
     Args:
         project_root: Root directory of ebk project
         output_path: Path for output .pdf file
+        font_size: Body font size in pt (default: 11)
+        landscape: If True, output in landscape orientation
+        flags: List of active feature flag strings for conditional rendering
 
     Raises:
         FileNotFoundError: If required files missing
@@ -58,6 +61,7 @@ def build_pdf(project_root, output_path):
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)
 
+    book_config['flags'] = flags or []
     metadata = normalize_metadata(book_config.get('metadata', {}))
 
     discovery_config = book_config.get('discovery', {})
@@ -129,6 +133,7 @@ def build_pdf(project_root, output_path):
 
     title = metadata.get('dc:title', os.path.basename(project_root))
     author = metadata.get('dc:creator', '')
+    page_size = 'A4 landscape' if landscape else 'A4'
 
     # Assemble full HTML document
     full_html = f"""<!DOCTYPE html>
@@ -137,7 +142,8 @@ def build_pdf(project_root, output_path):
   <meta charset="UTF-8" />
   <title>{title}</title>
   <style>
-    body {{ font-family: Georgia, serif; line-height: 1.6; margin: 2cm; }}
+    @page {{ size: {page_size}; }}
+    body {{ font-family: Georgia, serif; font-size: {font_size}pt; line-height: 1.6; margin: 2cm; }}
     h1, h2, h3, h4, h5, h6 {{ font-family: Arial, sans-serif; }}
     .chapter {{ page-break-before: always; }}
     .chapter:first-of-type {{ page-break-before: avoid; }}

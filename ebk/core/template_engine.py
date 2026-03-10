@@ -113,6 +113,9 @@ def load_context(project_root, chapter_path, book_config):
     if 'tw' in book_config:
         context['tw'] = book_config['tw']
 
+    # Add feature flags (set for fast `in` checks in templates)
+    context['flags'] = set(book_config.get('flags', []))
+
     return context
 
 

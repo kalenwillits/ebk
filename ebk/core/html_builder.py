@@ -40,7 +40,7 @@ def convert_chapter_to_html(md_content, css_files, title=""):
 </html>'''
 
 
-def build_html(project_root, output_dir):
+def build_html(project_root, output_dir, flags=None):
     """
     Build HTML output from an ebk project.
 
@@ -49,6 +49,7 @@ def build_html(project_root, output_dir):
     Args:
         project_root: Root directory of the ebk project
         output_dir: Directory to write HTML output into
+        flags: List of active feature flag strings for conditional rendering
     """
     book_yaml_path = os.path.join(project_root, 'book.yaml')
     if not os.path.exists(book_yaml_path):
@@ -56,6 +57,8 @@ def build_html(project_root, output_dir):
 
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)
+
+    book_config['flags'] = flags or []
 
     discovery_config = book_config.get('discovery', {})
     exclude_dirs = discovery_config.get('exclude', [
