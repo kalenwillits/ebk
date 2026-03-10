@@ -8,6 +8,7 @@ import yaml
 from ebk.core.markdown_processor import (
     get_chapters,
     get_chapter_title,
+    filter_chapters,
     discover_files_by_extension
 )
 from ebk.core.template_engine import render_chapter
@@ -432,6 +433,7 @@ def convert_chapter_to_xhtml(md_content, css_files):
         'tables',
         'fenced_code',
         'footnotes',
+        'md_in_html',
     ])
 
     html_content = md.convert(md_content)
@@ -458,7 +460,7 @@ def convert_chapter_to_xhtml(md_content, css_files):
     return xhtml
 
 
-def build_epub(project_root, output_path, flags=None):
+def build_epub(project_root, output_path, flags=None, chapters=None):
     """
     Build EPUB from ebk project directory.
 
@@ -466,6 +468,8 @@ def build_epub(project_root, output_path, flags=None):
         project_root: Root directory of ebk project
         output_path: Path for output .epub file
         flags: List of active feature flag strings for conditional rendering
+        chapters: List of chapter selectors (1-based index or filename substring);
+                  if empty or None, all chapters are included
 
     Raises:
         FileNotFoundError: If required files missing
@@ -505,7 +509,7 @@ def build_epub(project_root, output_path, flags=None):
                                            ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
 
     # Get chapters with exclusion support
-    chapters = get_chapters(content_root, exclude_dirs)
+    chapters = filter_chapters(get_chapters(content_root, exclude_dirs), chapters or [])
 
     if not chapters:
         raise ValueError(f"No markdown files found in {content_root}")

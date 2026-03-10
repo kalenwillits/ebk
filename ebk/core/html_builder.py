@@ -5,7 +5,7 @@ import shutil
 import markdown
 import yaml
 
-from ebk.core.markdown_processor import get_chapters, get_chapter_title
+from ebk.core.markdown_processor import get_chapters, get_chapter_title, filter_chapters
 from ebk.core.template_engine import render_chapter
 
 
@@ -17,6 +17,7 @@ def convert_chapter_to_html(md_content, css_files, title=""):
         'tables',
         'fenced_code',
         'footnotes',
+        'md_in_html',
     ])
 
     body = md.convert(md_content)
@@ -40,7 +41,7 @@ def convert_chapter_to_html(md_content, css_files, title=""):
 </html>'''
 
 
-def build_html(project_root, output_dir, flags=None):
+def build_html(project_root, output_dir, flags=None, chapters=None):
     """
     Build HTML output from an ebk project.
 
@@ -69,7 +70,7 @@ def build_html(project_root, output_dir, flags=None):
     content_root_config = discovery_config.get('root', '.')
     content_root = project_root if content_root_config == '.' else os.path.join(project_root, content_root_config)
 
-    chapters = get_chapters(content_root, exclude_dirs)
+    chapters = filter_chapters(get_chapters(content_root, exclude_dirs), chapters or [])
     if not chapters:
         raise ValueError(f"No markdown files found in {content_root}")
 

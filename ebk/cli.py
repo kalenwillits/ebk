@@ -16,7 +16,28 @@ def is_ebk_project():
     return os.path.exists('.ebk') and os.path.exists('book.yaml')
 
 
-def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None):
+def _resolve_output(output, default_filename, ext):
+    """
+    Resolve the final output file path from --output and the default filename.
+
+    - No --output:           use default_filename in cwd
+    - --output path/to/file.ext: use as full path (supports renaming)
+    - --output path/to/dir:  put default_filename inside that directory
+    """
+    if not output:
+        return default_filename
+    if output.lower().endswith(ext):
+        # Treat as a full file path; create parent dirs if needed
+        parent = os.path.dirname(output)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        return output
+    # Treat as directory
+    os.makedirs(output, exist_ok=True)
+    return os.path.join(output, os.path.basename(default_filename))
+
+
+def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None, output=None, chapters=None):
     """Build EPUB, PDF, or HTML from current directory."""
     if flags is None:
         flags = []
@@ -32,23 +53,21 @@ def build_current_project(pdf=False, html=False, font_size=11, landscape=False, 
             config = yaml.safe_load(f)
 
         if pdf:
-            output_filename = config.get('output', {}).get('pdf_filename')
-            if not output_filename:
-                output_filename = os.path.basename(os.getcwd()) + '.pdf'
+            default = config.get('output', {}).get('pdf_filename') or os.path.basename(os.getcwd()) + '.pdf'
+            output_filename = _resolve_output(output, default, '.pdf')
             print(f"Building PDF from current directory...")
-            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags)
+            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters)
             print(f"✓ Created {output_filename}")
         elif html:
-            output_dir = config.get('output', {}).get('html_dir', 'html')
+            output_dir = output or config.get('output', {}).get('html_dir', 'html')
             print(f"Building HTML from current directory...")
-            build_html(os.getcwd(), output_dir, flags=flags)
+            build_html(os.getcwd(), output_dir, flags=flags, chapters=chapters)
             print(f"✓ Created {output_dir}/")
         else:
-            output_filename = config.get('output', {}).get('filename')
-            if not output_filename:
-                output_filename = os.path.basename(os.getcwd()) + '.epub'
+            default = config.get('output', {}).get('filename') or os.path.basename(os.getcwd()) + '.epub'
+            output_filename = _resolve_output(output, default, '.epub')
             print(f"Building EPUB from current directory...")
-            build_epub(os.getcwd(), output_filename, flags=flags)
+            build_epub(os.getcwd(), output_filename, flags=flags, chapters=chapters)
             print(f"✓ Created {output_filename}")
 
     except Exception as e:
@@ -111,6 +130,21 @@ def main():
         help='Enable a feature flag for conditional rendering (repeatable, e.g. -f present)'
     )
 
+    parser.add_argument(
+        '--output', '-o',
+        metavar='PATH',
+        help='Output path: a directory (places file inside it) or a full filename to rename the output'
+    )
+
+    parser.add_argument(
+        '--chapter', '-c',
+        action='append',
+        dest='chapters',
+        default=[],
+        metavar='CHAPTER',
+        help='Include only this chapter (repeatable). Accepts a 1-based index or a filename substring. E.g. -c 2 or -c intro'
+    )
+
     args = parser.parse_args()
 
     if args.name:
@@ -128,6 +162,8 @@ def main():
             font_size=args.font_size,
             landscape=args.landscape,
             flags=args.flags,
+            output=args.output,
+            chapters=args.chapters,
         )
 
 

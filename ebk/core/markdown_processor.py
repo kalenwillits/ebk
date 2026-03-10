@@ -282,6 +282,45 @@ def get_chapters(content_dir, exclude_dirs=None):
     return order_chapters(chapters)
 
 
+def filter_chapters(chapters, selectors):
+    """
+    Filter an ordered chapter list by selector strings.
+
+    Each selector is either:
+    - A 1-based integer string ("1", "3") → selects by position
+    - A substring matched against the chapter filename or relative path
+
+    Args:
+        chapters: Ordered list of chapter dicts from get_chapters()
+        selectors: List of selector strings; if empty, all chapters returned
+
+    Returns:
+        list: Filtered (and deduplicated, order-preserving) chapter list
+    """
+    if not selectors:
+        return chapters
+
+    selected = {}
+    for sel in selectors:
+        sel = sel.strip()
+        try:
+            idx = int(sel) - 1  # convert to 0-based
+            if 0 <= idx < len(chapters):
+                selected[idx] = chapters[idx]
+            else:
+                print(f"  Warning: Chapter index {sel} out of range (1–{len(chapters)}), skipping")
+        except ValueError:
+            matched = False
+            for i, ch in enumerate(chapters):
+                if sel in ch['name'] or sel in ch['relative_path']:
+                    selected[i] = ch
+                    matched = True
+            if not matched:
+                print(f"  Warning: No chapter matching '{sel}', skipping")
+
+    return [selected[i] for i in sorted(selected)]
+
+
 def get_chapter_title(chapter):
     """
     Extract chapter title from metadata or first heading.

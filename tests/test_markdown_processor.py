@@ -6,6 +6,7 @@ from ebk.core.markdown_processor import (
     extract_numeric_prefix,
     get_chapter_title,
     order_chapters,
+    filter_chapters,
     should_exclude_path,
 )
 
@@ -63,6 +64,54 @@ def test_title_from_first_heading(tmp_path):
     md_file.write_text('# The Real Title\n\nSome content.')
     chapter = {'metadata': {}, 'path': str(md_file), 'name': 'chapter.md'}
     assert get_chapter_title(chapter) == 'The Real Title'
+
+
+# --- filter_chapters ---
+
+def _ch(name, idx):
+    return {
+        'name': name, 'relative_path': name,
+        'path': f'/{name}', 'order': idx, 'depth': 0,
+        'metadata': {}, 'is_intro': False,
+    }
+
+def test_filter_empty_selectors_returns_all():
+    chapters = [_ch('01-intro.md', 1), _ch('02-body.md', 2)]
+    assert filter_chapters(chapters, []) == chapters
+
+def test_filter_by_index():
+    chapters = [_ch('01-intro.md', 1), _ch('02-body.md', 2), _ch('03-end.md', 3)]
+    result = filter_chapters(chapters, ['2'])
+    assert len(result) == 1
+    assert result[0]['name'] == '02-body.md'
+
+def test_filter_multiple_indexes():
+    chapters = [_ch('01-intro.md', 1), _ch('02-body.md', 2), _ch('03-end.md', 3)]
+    result = filter_chapters(chapters, ['1', '3'])
+    assert [c['name'] for c in result] == ['01-intro.md', '03-end.md']
+
+def test_filter_by_name_substring():
+    chapters = [_ch('01-intro.md', 1), _ch('02-runway.md', 2)]
+    result = filter_chapters(chapters, ['runway'])
+    assert len(result) == 1
+    assert result[0]['name'] == '02-runway.md'
+
+def test_filter_preserves_order():
+    chapters = [_ch('01-intro.md', 1), _ch('02-body.md', 2), _ch('03-end.md', 3)]
+    result = filter_chapters(chapters, ['3', '1'])
+    assert [c['name'] for c in result] == ['01-intro.md', '03-end.md']
+
+def test_filter_out_of_range_index_skipped(capsys):
+    chapters = [_ch('01-intro.md', 1)]
+    result = filter_chapters(chapters, ['99'])
+    assert result == []
+    assert 'Warning' in capsys.readouterr().out
+
+def test_filter_no_match_skipped(capsys):
+    chapters = [_ch('01-intro.md', 1)]
+    result = filter_chapters(chapters, ['nonexistent'])
+    assert result == []
+    assert 'Warning' in capsys.readouterr().out
 
 
 # --- should_exclude_path ---
