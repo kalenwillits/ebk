@@ -65,7 +65,27 @@ ebk --help         # Show help
 ebk --pdf                        # Default: A4, 11pt
 ebk --pdf --font-size 14         # 14pt body text
 ebk --pdf --landscape            # A4 landscape orientation
-ebk --pdf --font-size 12 --landscape
+ebk --pdf --no-cover             # Omit the title/author cover page
+ebk --pdf --no-toc               # Omit the table of contents page
+ebk --pdf --no-cover --no-toc   # Content only, no frontmatter
+```
+
+### Output Path
+
+```bash
+ebk -o build/                    # Place output in build/ directory
+ebk -o build/my-book.epub        # Custom filename
+ebk --pdf -o dist/handout.pdf    # PDF with custom path
+ebk --html -o dist/html/         # HTML to a specific directory
+```
+
+### Chapter Selection
+
+```bash
+ebk -c 2                         # Chapter 2 only (1-based index)
+ebk -c 1 -c 3                    # Chapters 1 and 3
+ebk -c runway                    # Any chapter whose filename contains "runway"
+ebk --pdf -c 2 --no-cover --no-toc  # Single chapter PDF, no frontmatter
 ```
 
 ### Feature Flags

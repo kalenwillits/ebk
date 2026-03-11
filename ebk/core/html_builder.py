@@ -41,7 +41,7 @@ def convert_chapter_to_html(md_content, css_files, title=""):
 </html>'''
 
 
-def build_html(project_root, output_dir, flags=None, chapters=None):
+def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False):
     """
     Build HTML output from an ebk project.
 
@@ -124,12 +124,13 @@ def build_html(project_root, output_dir, flags=None, chapters=None):
         print(f"  {filename}: {title}")
 
     # Write index.html
-    css_links = '\n'.join([
-        f'  <link rel="stylesheet" href="css/{css}">'
-        for css in css_files
-    ])
-    toc_list = '\n'.join(toc_items)
-    index_html = f'''<!DOCTYPE html>
+    if not no_toc:
+        css_links = '\n'.join([
+            f'  <link rel="stylesheet" href="css/{css}">'
+            for css in css_files
+        ])
+        toc_list = '\n'.join(toc_items)
+        index_html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -147,8 +148,8 @@ def build_html(project_root, output_dir, flags=None, chapters=None):
 </body>
 </html>'''
 
-    with open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8') as f:
-        f.write(index_html)
+        with open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8') as f:
+            f.write(index_html)
 
     # Copy CSS
     for css, path in css_files_map.items():

@@ -37,7 +37,7 @@ def _resolve_output(output, default_filename, ext):
     return os.path.join(output, os.path.basename(default_filename))
 
 
-def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None, output=None, chapters=None):
+def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False):
     """Build EPUB, PDF, or HTML from current directory."""
     if flags is None:
         flags = []
@@ -56,12 +56,12 @@ def build_current_project(pdf=False, html=False, font_size=11, landscape=False, 
             default = config.get('output', {}).get('pdf_filename') or os.path.basename(os.getcwd()) + '.pdf'
             output_filename = _resolve_output(output, default, '.pdf')
             print(f"Building PDF from current directory...")
-            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters)
+            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc)
             print(f"✓ Created {output_filename}")
         elif html:
             output_dir = output or config.get('output', {}).get('html_dir', 'html')
             print(f"Building HTML from current directory...")
-            build_html(os.getcwd(), output_dir, flags=flags, chapters=chapters)
+            build_html(os.getcwd(), output_dir, flags=flags, chapters=chapters, no_toc=no_toc)
             print(f"✓ Created {output_dir}/")
         else:
             default = config.get('output', {}).get('filename') or os.path.basename(os.getcwd()) + '.epub'
@@ -137,6 +137,18 @@ def main():
     )
 
     parser.add_argument(
+        '--no-cover',
+        action='store_true',
+        help='Omit the title/author cover page from PDF output'
+    )
+
+    parser.add_argument(
+        '--no-toc',
+        action='store_true',
+        help='Omit the table of contents from PDF and HTML output'
+    )
+
+    parser.add_argument(
         '--chapter', '-c',
         action='append',
         dest='chapters',
@@ -164,6 +176,8 @@ def main():
             flags=args.flags,
             output=args.output,
             chapters=args.chapters,
+            no_cover=args.no_cover,
+            no_toc=args.no_toc,
         )
 
 

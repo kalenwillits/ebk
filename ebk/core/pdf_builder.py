@@ -30,7 +30,7 @@ def _rewrite_img_srcs(html, images_map):
     return re.sub(r'src="([^"]*)"', replace_src, html)
 
 
-def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None):
+def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False):
     """
     Build PDF from ebk project directory.
 
@@ -96,11 +96,14 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
                 css_content += f.read() + "\n"
 
     # Build table of contents HTML
-    toc_items = "\n".join(
-        f'  <li><a href="#{i}">{get_chapter_title(ch)}</a></li>'
-        for i, ch in enumerate(chapters)
-    )
-    toc_html = f"""
+    if no_toc:
+        toc_html = ""
+    else:
+        toc_items = "\n".join(
+            f'  <li><a href="#{i}">{get_chapter_title(ch)}</a></li>'
+            for i, ch in enumerate(chapters)
+        )
+        toc_html = f"""
 <nav id="toc">
   <h1>Table of Contents</h1>
   <ol>
@@ -155,11 +158,7 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
   </style>
 </head>
 <body>
-  <div id="cover">
-    <h1>{title}</h1>
-    {"<p>" + author + "</p>" if author else ""}
-  </div>
-  <div style="page-break-after: always;"></div>
+  {'' if no_cover else f'<div id="cover"><h1>{title}</h1>{"<p>" + author + "</p>" if author else ""}</div><div style="page-break-after: always;"></div>'}
   {toc_html}
   {"".join(chapter_html_parts)}
 </body>
