@@ -9,6 +9,7 @@ from ebk.core.project_structure import create_new_book
 from ebk.core.epub_builder import build_epub
 from ebk.core.pdf_builder import build_pdf
 from ebk.core.html_builder import build_html
+from ebk.core.linter import run_lint
 
 
 def is_ebk_project():
@@ -35,6 +36,19 @@ def _resolve_output(output, default_filename, ext):
     # Treat as directory
     os.makedirs(output, exist_ok=True)
     return os.path.join(output, os.path.basename(default_filename))
+
+
+def check_current_project(flags=None, chapters=None):
+    """Lint the current ebk project."""
+    if flags is None:
+        flags = []
+
+    if not is_ebk_project():
+        print("Error: Not an ebk project directory.", file=sys.stderr)
+        print("Run 'ebk <name>' to create a new project.", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(run_lint(os.getcwd(), flags=flags, chapters_filter=chapters))
 
 
 def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False):
@@ -157,6 +171,12 @@ def main():
         help='Include only this chapter (repeatable). Accepts a 1-based index or a filename substring. E.g. -c 2 or -c intro'
     )
 
+    parser.add_argument(
+        '--check',
+        action='store_true',
+        help='Lint the project for errors: validates Jinja2 syntax, XHTML well-formedness, metadata, CSS, images, and Apple Books compatibility'
+    )
+
     args = parser.parse_args()
 
     if args.name:
@@ -166,6 +186,12 @@ def main():
         except Exception as e:
             print(f"Error creating project: {e}", file=sys.stderr)
             sys.exit(1)
+    elif args.check:
+        # Lint current project
+        check_current_project(
+            flags=args.flags,
+            chapters=args.chapters,
+        )
     else:
         # Build current project
         build_current_project(

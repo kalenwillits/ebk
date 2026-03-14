@@ -10,6 +10,7 @@ A simple, opinionated CLI utility for building EPUB, PDF, and HTML books from ma
 - **Feature flags**: Conditionally render content based on build flags (e.g. presentation vs. print mode)
 - **Deep nesting**: Organize complex books with unlimited folder nesting
 - **Multiple output formats**: EPUB, PDF, and HTML
+- **Built-in linter**: Validate Jinja2 syntax, XHTML, metadata, CSS, and Apple Books compatibility
 - **Single binary**: Package as standalone executable with PyInstaller
 
 ## Quick Start
@@ -55,6 +56,7 @@ ebk "Book Name"    # Create new book project
 ebk                # Build EPUB from current directory
 ebk --html         # Build HTML output
 ebk --pdf          # Build PDF
+ebk --check        # Lint project for errors
 ebk --version      # Show version
 ebk --help         # Show help
 ```
@@ -87,6 +89,31 @@ ebk -c 1 -c 3                    # Chapters 1 and 3
 ebk -c runway                    # Any chapter whose filename contains "runway"
 ebk --pdf -c 2 --no-cover --no-toc  # Single chapter PDF, no frontmatter
 ```
+
+### Linting
+
+Validate your project before building — checks are held to the Apple Books standard (the strictest major EPUB reader):
+
+```bash
+ebk --check                      # Lint entire project
+ebk --check -c 2                 # Lint only chapter 2
+ebk --check -f present           # Lint with feature flag enabled
+```
+
+The linter checks:
+- **book.yaml**: required and recommended metadata fields, YAML syntax, BCP 47 language tags
+- **Jinja2 templates**: syntax errors and undefined variables in every chapter
+- **XHTML well-formedness**: generated output is valid XML (required by EPUB spec)
+- **HTML compatibility**: flags tags unsupported by Apple Books (`<video>`, `<audio>`, `<iframe>`, `<script>`, `<form>`, etc.)
+- **Accessibility**: missing `alt` attributes on images
+- **CSS compatibility**: warns about `position:fixed`, CSS Grid, Flexbox, animations, and other features Apple Books ignores
+- **CSS syntax**: unmatched braces
+- **Images**: size limits (Apple Books rejects >10 MB), format warnings (SVG, GIF)
+- **Content quality**: heading level jumps, missing headings, null bytes, BOM characters
+- **Context files**: validates YAML/JSON syntax in `context/` directory
+- **Cover image**: warns if missing, errors if referenced but not found
+
+Exit code is `0` if no errors (warnings are OK), `1` if errors are found.
 
 ### Feature Flags
 
@@ -387,6 +414,7 @@ ebk/
 │       ├── epub_builder.py          # EPUB generation
 │       ├── pdf_builder.py           # PDF generation (weasyprint)
 │       ├── html_builder.py          # HTML generation
+│       ├── linter.py                # Project linter (--check)
 │       ├── markdown_processor.py    # Chapter discovery and ordering
 │       ├── template_engine.py       # Jinja2 rendering
 │       └── project_structure.py     # Project scaffolding
@@ -412,7 +440,7 @@ ebk/
 
 **"Error parsing book.yaml"** — Verify YAML syntax with a YAML validator.
 
-**Template errors** — Check Jinja2 syntax; the error message includes the line number.
+**Template errors** — Check Jinja2 syntax; the error message includes the line number. Run `ebk --check` to find all template issues before building.
 
 **PDF export fails** — Install weasyprint: `pip install weasyprint`.
 
