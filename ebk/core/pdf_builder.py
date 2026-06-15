@@ -30,7 +30,7 @@ def _rewrite_img_srcs(html, images_map):
     return re.sub(r'src="([^"]*)"', replace_src, html)
 
 
-def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False):
+def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter'):
     """
     Build PDF from ebk project directory.
 
@@ -40,6 +40,10 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
         font_size: Body font size in pt (default: 11)
         landscape: If True, output in landscape orientation
         flags: List of active feature flag strings for conditional rendering
+        booklet: If True, impose pages 2-up for saddle-stitch booklet printing
+        split: Signature size (pages per folded bundle) for booklet mode; must
+            be a multiple of 4. None means the whole book is one signature.
+        paper: Physical sheet size for booklet imposition ('letter' or 'a4')
 
     Raises:
         FileNotFoundError: If required files missing
@@ -136,7 +140,12 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
 
     title = metadata.get('dc:title', os.path.basename(project_root))
     author = metadata.get('dc:creator', '')
-    page_size = 'A4 landscape' if landscape else 'A4'
+    if booklet:
+        # Content is rendered at half a sheet so two pages fit side by side
+        # after imposition. Booklet geometry overrides the landscape flag.
+        page_size = '5.5in 8.5in' if paper == 'letter' else 'A5'
+    else:
+        page_size = 'A4 landscape' if landscape else 'A4'
 
     # Assemble full HTML document
     full_html = f"""<!DOCTYPE html>
@@ -164,7 +173,13 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
 </body>
 </html>"""
 
-    HTML(string=full_html, base_url=project_root).write_pdf(output_path)
+    if booklet:
+        from ebk.core.booklet import impose_booklet
+        pdf_bytes = HTML(string=full_html, base_url=project_root).write_pdf()
+        n_sheets = impose_booklet(pdf_bytes, output_path, sheet=paper, split=split)
+        print(f"  Imposed {n_sheets} booklet sheet-sides ({paper})")
+    else:
+        HTML(string=full_html, base_url=project_root).write_pdf(output_path)
 
     size_bytes = os.path.getsize(output_path)
     size_mb = size_bytes / (1024 * 1024)

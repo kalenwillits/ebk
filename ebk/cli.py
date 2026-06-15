@@ -9,6 +9,7 @@ from ebk.core.project_structure import create_new_book
 from ebk.core.epub_builder import build_epub
 from ebk.core.pdf_builder import build_pdf
 from ebk.core.html_builder import build_html
+from ebk.core.odt_builder import build_odt
 from ebk.core.linter import run_lint
 
 
@@ -51,8 +52,8 @@ def check_current_project(flags=None, chapters=None):
     sys.exit(run_lint(os.getcwd(), flags=flags, chapters_filter=chapters))
 
 
-def build_current_project(pdf=False, html=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False):
-    """Build EPUB, PDF, or HTML from current directory."""
+def build_current_project(pdf=False, html=False, odt=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter'):
+    """Build EPUB, PDF, HTML, or ODT from current directory."""
     if flags is None:
         flags = []
 
@@ -70,13 +71,19 @@ def build_current_project(pdf=False, html=False, font_size=11, landscape=False, 
             default = config.get('output', {}).get('pdf_filename') or os.path.basename(os.getcwd()) + '.pdf'
             output_filename = _resolve_output(output, default, '.pdf')
             print(f"Building PDF from current directory...")
-            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc)
+            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc, booklet=booklet, split=split, paper=paper)
             print(f"✓ Created {output_filename}")
         elif html:
             output_dir = output or config.get('output', {}).get('html_dir', 'html')
             print(f"Building HTML from current directory...")
             build_html(os.getcwd(), output_dir, flags=flags, chapters=chapters, no_toc=no_toc)
             print(f"✓ Created {output_dir}/")
+        elif odt:
+            default = config.get('output', {}).get('odt_filename') or os.path.basename(os.getcwd()) + '.odt'
+            output_filename = _resolve_output(output, default, '.odt')
+            print(f"Building ODT from current directory...")
+            build_odt(os.getcwd(), output_filename, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc)
+            print(f"✓ Created {output_filename}")
         else:
             default = config.get('output', {}).get('filename') or os.path.basename(os.getcwd()) + '.epub'
             output_filename = _resolve_output(output, default, '.epub')
@@ -85,7 +92,7 @@ def build_current_project(pdf=False, html=False, font_size=11, landscape=False, 
             print(f"✓ Created {output_filename}")
 
     except Exception as e:
-        print(f"Error building {'PDF' if pdf else 'HTML' if html else 'EPUB'}: {e}", file=sys.stderr)
+        print(f"Error building {'PDF' if pdf else 'HTML' if html else 'ODT' if odt else 'EPUB'}: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -122,6 +129,12 @@ def main():
     )
 
     parser.add_argument(
+        '--odt',
+        action='store_true',
+        help='Export to ODT (OpenDocument Text, for LibreOffice) instead of EPUB'
+    )
+
+    parser.add_argument(
         '--font-size',
         type=int,
         default=11,
@@ -133,6 +146,27 @@ def main():
         '--landscape',
         action='store_true',
         help='Export PDF in landscape orientation'
+    )
+
+    parser.add_argument(
+        '--booklet',
+        action='store_true',
+        help='Impose PDF pages 2-up for saddle-stitch booklet printing (duplex, flip on short edge)'
+    )
+
+    parser.add_argument(
+        '--split',
+        type=int,
+        default=None,
+        metavar='N',
+        help='Booklet signature size: split the book into N-page folded bundles (N must be a multiple of 4; requires --booklet)'
+    )
+
+    parser.add_argument(
+        '--paper',
+        choices=['letter', 'a4'],
+        default='letter',
+        help='Sheet size for booklet imposition (default: letter)'
     )
 
     parser.add_argument(
@@ -179,6 +213,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Booklet option validation
+    if args.split is not None and not args.booklet:
+        parser.error("--split requires --booklet")
+    if args.booklet and args.split is not None and args.split % 4 != 0:
+        parser.error("--split N must be a multiple of 4 (each folded sheet holds 4 pages)")
+
     if args.name:
         # Create new book project
         try:
@@ -197,6 +237,7 @@ def main():
         build_current_project(
             pdf=args.pdf,
             html=args.html,
+            odt=args.odt,
             font_size=args.font_size,
             landscape=args.landscape,
             flags=args.flags,
@@ -204,6 +245,9 @@ def main():
             chapters=args.chapters,
             no_cover=args.no_cover,
             no_toc=args.no_toc,
+            booklet=args.booklet,
+            split=args.split,
+            paper=args.paper,
         )
 
 

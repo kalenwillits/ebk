@@ -9,7 +9,7 @@ A simple, opinionated CLI utility for building EPUB, PDF, and HTML books from ma
 - **Jinja2 templating**: Use variables, conditionals, and loops in your content
 - **Feature flags**: Conditionally render content based on build flags (e.g. presentation vs. print mode)
 - **Deep nesting**: Organize complex books with unlimited folder nesting
-- **Multiple output formats**: EPUB, PDF, and HTML
+- **Multiple output formats**: EPUB, PDF, HTML, and ODT (LibreOffice)
 - **Built-in linter**: Validate Jinja2 syntax, XHTML, metadata, CSS, and Apple Books compatibility
 - **Single binary**: Package as standalone executable with PyInstaller
 
@@ -56,6 +56,7 @@ ebk "Book Name"    # Create new book project
 ebk                # Build EPUB from current directory
 ebk --html         # Build HTML output
 ebk --pdf          # Build PDF
+ebk --odt          # Build ODT (LibreOffice / OpenDocument Text)
 ebk --check        # Lint project for errors
 ebk --version      # Show version
 ebk --help         # Show help
@@ -72,6 +73,41 @@ ebk --pdf --no-toc               # Omit the table of contents page
 ebk --pdf --no-cover --no-toc   # Content only, no frontmatter
 ```
 
+### Booklet Printing
+
+`--booklet` imposes the PDF for saddle-stitch booklet printing: two book pages
+per sheet, landscape, reordered so a folded stack reads in order. Each sheet
+holds two half-size pages (Letter → half-letter pages, A4 → A5).
+
+```bash
+ebk --pdf --booklet                  # One booklet, Letter sheets (default)
+ebk --pdf --booklet --paper a4       # A4 sheets (A5 pages)
+ebk --pdf --booklet --split 32       # Split into 32-page signatures
+```
+
+- **`--split N`** breaks a thick book into folded bundles ("signatures") of `N`
+  pages each — e.g. a 400-page book in `--split 32` yields 32-page signatures.
+  `N` must be a multiple of 4 and requires `--booklet`.
+- The last signature is padded with blank pages to a multiple of 4.
+
+**Printing:** send the PDF to your printer with **double-sided / duplex, flip on
+short edge**. Fold each signature in half and saddle-stitch (staple) along the
+fold. If the back sides come out upside-down, switch the duplex flip to long
+edge.
+
+### ODT Options
+
+Produces an editable OpenDocument Text file that opens in LibreOffice Writer
+(and Word, Google Docs, etc.). The table of contents is a native field you can
+regenerate inside the editor.
+
+```bash
+ebk --odt                        # Build book.odt with cover + TOC
+ebk --odt --no-cover             # Omit the title/author cover page
+ebk --odt --no-toc               # Omit the table of contents
+ebk --odt -o dist/draft.odt      # Custom output path
+```
+
 ### Output Path
 
 ```bash
@@ -79,6 +115,7 @@ ebk -o build/                    # Place output in build/ directory
 ebk -o build/my-book.epub        # Custom filename
 ebk --pdf -o dist/handout.pdf    # PDF with custom path
 ebk --html -o dist/html/         # HTML to a specific directory
+ebk --odt -o dist/draft.odt      # ODT with custom path
 ```
 
 ### Chapter Selection

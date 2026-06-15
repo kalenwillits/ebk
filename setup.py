@@ -26,6 +26,9 @@ setup(
         'markdown>=3.1',
         'Jinja2>=3.0',
         'PyYAML>=6.0',
+        'weasyprint>=60.0',
+        'odfpy>=1.4',
+        'pypdf>=4.0',
     ],
     entry_points={
         'console_scripts': [
