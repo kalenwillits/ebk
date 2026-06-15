@@ -122,3 +122,53 @@ def test_pdf_no_cover_no_toc(simple_project, tmp_path):
         assert 'id="toc"' not in captured['html']
     finally:
         weasyprint.HTML = RealHTML
+
+
+def _capture_css(simple_project, tmp_path, **build_kwargs):
+    """Run build_pdf capturing the generated HTML/CSS string.
+
+    Handles both write_pdf signatures: write_pdf(path) for normal builds and
+    write_pdf() -> bytes for booklet mode (which then imposes via pypdf).
+    """
+    import weasyprint
+    from weasyprint import HTML as RealHTML
+    captured = {}
+    real_bytes = RealHTML(string='<html><body>x</body></html>').write_pdf()
+
+    class CapturingHTML:
+        def __init__(self, string=None, base_url=None):
+            captured['html'] = string
+
+        def write_pdf(self, path=None):
+            if path is None:
+                return real_bytes  # booklet path expects raw bytes back
+            import pathlib
+            pathlib.Path(path).write_bytes(b'%PDF-1.4 fake')
+
+    try:
+        weasyprint.HTML = CapturingHTML
+        build_pdf(str(simple_project), str(tmp_path / 'out.pdf'), **build_kwargs)
+    finally:
+        weasyprint.HTML = RealHTML
+    return captured['html']
+
+
+def test_pdf_default_margin(simple_project, tmp_path):
+    css = _capture_css(simple_project, tmp_path)
+    assert 'margin: 2.0cm' in css          # exact total margin on @page
+    assert 'line-height: 1.6; margin: 0' in css  # body margin zeroed (no doubling)
+
+
+def test_pdf_custom_margin(simple_project, tmp_path):
+    css = _capture_css(simple_project, tmp_path, margin=3)
+    assert 'margin: 3.0cm' in css
+
+
+def test_pdf_booklet_default_margin(simple_project, tmp_path):
+    css = _capture_css(simple_project, tmp_path, booklet=True)
+    assert 'margin: 0.5cm' in css          # booklet maximizes content area
+
+
+def test_pdf_booklet_margin_override(simple_project, tmp_path):
+    css = _capture_css(simple_project, tmp_path, booklet=True, margin=1.5)
+    assert 'margin: 1.5cm' in css

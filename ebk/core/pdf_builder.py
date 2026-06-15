@@ -30,7 +30,7 @@ def _rewrite_img_srcs(html, images_map):
     return re.sub(r'src="([^"]*)"', replace_src, html)
 
 
-def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter'):
+def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter', margin=None):
     """
     Build PDF from ebk project directory.
 
@@ -44,6 +44,9 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
         split: Signature size (pages per folded bundle) for booklet mode; must
             be a multiple of 4. None means the whole book is one signature.
         paper: Physical sheet size for booklet imposition ('letter' or 'a4')
+        margin: Page margin in cm applied to all four edges. None uses the
+            per-mode default (0.5cm in booklet mode to maximize the small page,
+            2cm otherwise).
 
     Raises:
         FileNotFoundError: If required files missing
@@ -147,6 +150,14 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
     else:
         page_size = 'A4 landscape' if landscape else 'A4'
 
+    # Total page margin. Booklet pages are small, so default tight to maximize
+    # content; the margin lives on @page (body margin is zeroed) so the value is
+    # the exact, total inset on every edge.
+    if margin is None:
+        margin_cm = 0.5 if booklet else 2.0
+    else:
+        margin_cm = float(margin)
+
     # Assemble full HTML document
     full_html = f"""<!DOCTYPE html>
 <html>
@@ -154,8 +165,8 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
   <meta charset="UTF-8" />
   <title>{title}</title>
   <style>
-    @page {{ size: {page_size}; }}
-    body {{ font-family: Georgia, serif; font-size: {font_size}pt; line-height: 1.6; margin: 2cm; }}
+    @page {{ size: {page_size}; margin: {margin_cm}cm; }}
+    body {{ font-family: Georgia, serif; font-size: {font_size}pt; line-height: 1.6; margin: 0; }}
     h1, h2, h3, h4, h5, h6 {{ font-family: Arial, sans-serif; }}
     .chapter {{ page-break-before: always; }}
     .chapter:first-of-type {{ page-break-before: avoid; }}

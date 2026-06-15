@@ -52,7 +52,7 @@ def check_current_project(flags=None, chapters=None):
     sys.exit(run_lint(os.getcwd(), flags=flags, chapters_filter=chapters))
 
 
-def build_current_project(pdf=False, html=False, odt=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter'):
+def build_current_project(pdf=False, html=False, odt=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter', margin=None):
     """Build EPUB, PDF, HTML, or ODT from current directory."""
     if flags is None:
         flags = []
@@ -71,7 +71,7 @@ def build_current_project(pdf=False, html=False, odt=False, font_size=11, landsc
             default = config.get('output', {}).get('pdf_filename') or os.path.basename(os.getcwd()) + '.pdf'
             output_filename = _resolve_output(output, default, '.pdf')
             print(f"Building PDF from current directory...")
-            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc, booklet=booklet, split=split, paper=paper)
+            build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc, booklet=booklet, split=split, paper=paper, margin=margin)
             print(f"✓ Created {output_filename}")
         elif html:
             output_dir = output or config.get('output', {}).get('html_dir', 'html')
@@ -170,6 +170,14 @@ def main():
     )
 
     parser.add_argument(
+        '--margin',
+        type=float,
+        default=None,
+        metavar='CM',
+        help='PDF page margin in cm on all edges (default: 2 normally, 0.5 in --booklet mode)'
+    )
+
+    parser.add_argument(
         '--flag', '-f',
         action='append',
         dest='flags',
@@ -248,6 +256,7 @@ def main():
             booklet=args.booklet,
             split=args.split,
             paper=args.paper,
+            margin=args.margin,
         )
 
 

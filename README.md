@@ -71,7 +71,10 @@ ebk --pdf --landscape            # A4 landscape orientation
 ebk --pdf --no-cover             # Omit the title/author cover page
 ebk --pdf --no-toc               # Omit the table of contents page
 ebk --pdf --no-cover --no-toc   # Content only, no frontmatter
+ebk --pdf --margin 1.5           # 1.5cm page margins on all edges (default 2cm)
 ```
+
+`--margin` sets the total page margin in centimeters on every edge.
 
 ### Booklet Printing
 
@@ -89,6 +92,8 @@ ebk --pdf --booklet --split 32       # Split into 32-page signatures
   pages each — e.g. a 400-page book in `--split 32` yields 32-page signatures.
   `N` must be a multiple of 4 and requires `--booklet`.
 - The last signature is padded with blank pages to a multiple of 4.
+- Booklet pages are small, so margins default to a tight **0.5cm** to maximize
+  the printable area. Override with `--margin` (e.g. `--booklet --margin 1`).
 
 **Printing:** send the PDF to your printer with **double-sided / duplex, flip on
 short edge**. Fold each signature in half and saddle-stitch (staple) along the
