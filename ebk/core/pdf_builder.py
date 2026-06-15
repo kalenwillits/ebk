@@ -30,14 +30,15 @@ def _rewrite_img_srcs(html, images_map):
     return re.sub(r'src="([^"]*)"', replace_src, html)
 
 
-def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter', margin=None):
+def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter', margin=None):
     """
     Build PDF from ebk project directory.
 
     Args:
         project_root: Root directory of ebk project
         output_path: Path for output .pdf file
-        font_size: Body font size in pt (default: 11)
+        font_size: Body font size in pt. None uses the 11pt default, which a
+            project's CSS may override. An explicit value wins over project CSS.
         landscape: If True, output in landscape orientation
         flags: List of active feature flag strings for conditional rendering
         booklet: If True, impose pages 2-up for saddle-stitch booklet printing
@@ -158,6 +159,16 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
     else:
         margin_cm = float(margin)
 
+    # Body font size. The base rule (above css_content) uses the 11pt default so
+    # a project's CSS can override it. When the caller passes an explicit
+    # font_size, we emit a second rule AFTER css_content so the CLI flag wins
+    # over the project's `body { font-size }` (otherwise project CSS, injected
+    # last, silently overrides --font-size).
+    base_font_size = font_size if font_size is not None else 11
+    cli_overrides = "body { margin: 0 !important; }"  # keep margin owned by @page
+    if font_size is not None:
+        cli_overrides += f"\n    body {{ font-size: {font_size}pt !important; }}"
+
     # Assemble full HTML document
     full_html = f"""<!DOCTYPE html>
 <html>
@@ -166,7 +177,7 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
   <title>{title}</title>
   <style>
     @page {{ size: {page_size}; margin: {margin_cm}cm; }}
-    body {{ font-family: Georgia, serif; font-size: {font_size}pt; line-height: 1.6; margin: 0; }}
+    body {{ font-family: Georgia, serif; font-size: {base_font_size}pt; line-height: 1.6; margin: 0; }}
     h1, h2, h3, h4, h5, h6 {{ font-family: Arial, sans-serif; }}
     .chapter {{ page-break-before: always; }}
     .chapter:first-of-type {{ page-break-before: avoid; }}
@@ -175,6 +186,8 @@ def build_pdf(project_root, output_path, font_size=11, landscape=False, flags=No
     #toc ol {{ line-height: 2; }}
     img {{ max-width: 100%; height: auto; }}
     {css_content}
+    /* CLI flags override project CSS */
+    {cli_overrides}
   </style>
 </head>
 <body>

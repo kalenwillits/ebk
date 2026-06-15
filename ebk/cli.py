@@ -137,9 +137,9 @@ def main():
     parser.add_argument(
         '--font-size',
         type=int,
-        default=11,
+        default=None,
         metavar='PT',
-        help='PDF font size in pt (default: 11)'
+        help='PDF body font size in pt (default: 11). Overrides any font-size set in the project CSS.'
     )
 
     parser.add_argument(

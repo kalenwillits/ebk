@@ -172,3 +172,36 @@ def test_pdf_booklet_default_margin(simple_project, tmp_path):
 def test_pdf_booklet_margin_override(simple_project, tmp_path):
     css = _capture_css(simple_project, tmp_path, booklet=True, margin=1.5)
     assert 'margin: 1.5cm' in css
+
+
+def test_pdf_default_font_size_no_override(simple_project, tmp_path):
+    """With no --font-size, the base rule is 11pt and project CSS can override it."""
+    css = _capture_css(simple_project, tmp_path)
+    assert 'font-size: 11pt' in css
+    assert 'font-size' not in css.split('CLI flags override')[1]  # no font-size override emitted
+
+
+def test_pdf_explicit_font_size_wins_over_css(simple_project, tmp_path):
+    """An explicit --font-size emits an !important rule AFTER css_content."""
+    css = _capture_css(simple_project, tmp_path, font_size=8)
+    assert 'font-size: 8pt !important' in css
+    # The override must come after the project CSS injection point to win
+    assert css.index('font-size: 8pt !important') > css.index('CLI flags override')
+
+
+def test_pdf_font_size_overrides_project_body_css(simple_project, tmp_path):
+    """End-to-end: a project body{font-size} must not defeat --font-size."""
+    from ebk.core.pdf_builder import build_pdf
+    from pypdf import PdfReader
+    # Project CSS that pins the body font-size
+    css_dir = simple_project / 'assets' / 'css'
+    css_dir.mkdir(parents=True)
+    (css_dir / 'custom.css').write_text('body { font-size: 11pt; }')
+    (simple_project / '01-intro.md').write_text('# Intro\n\n' + ('word ' * 400))
+
+    small = tmp_path / 'small.pdf'
+    big = tmp_path / 'big.pdf'
+    build_pdf(str(simple_project), str(small), font_size=6)
+    build_pdf(str(simple_project), str(big), font_size=24)
+    # Larger font must produce at least as many pages (font-size took effect)
+    assert len(PdfReader(str(big)).pages) > len(PdfReader(str(small)).pages)

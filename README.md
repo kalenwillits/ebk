@@ -74,7 +74,9 @@ ebk --pdf --no-cover --no-toc   # Content only, no frontmatter
 ebk --pdf --margin 1.5           # 1.5cm page margins on all edges (default 2cm)
 ```
 
-`--margin` sets the total page margin in centimeters on every edge.
+`--margin` sets the total page margin in centimeters on every edge. `--font-size`
+overrides any `body` font-size set in your project CSS (without the flag, the
+project CSS wins). Both apply in `--booklet` mode too.
 
 ### Booklet Printing
 
