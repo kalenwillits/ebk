@@ -7,6 +7,7 @@ import yaml
 
 from ebk.core.markdown_processor import get_chapters, get_chapter_title, filter_chapters
 from ebk.core.template_engine import render_chapter
+from ebk.core.links import build_source_index_map, rewrite_cross_links
 
 
 def convert_chapter_to_html(md_content, css_files, title=""):
@@ -108,6 +109,7 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
     print("Processing chapters...")
 
     chapter_files = []
+    src_index_map = build_source_index_map(chapters)
     for i, chapter in enumerate(chapters):
         slug = f's{i:05d}'
         filename = f'{slug}.html'
@@ -116,6 +118,7 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
 
         rendered_md = render_chapter(chapter['path'], project_root, book_config)
         html = convert_chapter_to_html(rendered_md, css_files, title=title)
+        html = rewrite_cross_links(html, src_index_map, 'html')
 
         with open(os.path.join(output_dir, filename), 'w', encoding='utf-8') as f:
             f.write(html)

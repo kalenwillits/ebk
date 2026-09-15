@@ -5,6 +5,7 @@ import re
 import markdown
 import yaml
 from ebk.core.markdown_processor import get_chapters, get_chapter_title, filter_chapters
+from ebk.core.links import build_source_index_map, rewrite_cross_links
 from ebk.core.template_engine import render_chapter
 from ebk.core.epub_builder import normalize_metadata
 
@@ -124,6 +125,7 @@ def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=
     print("Processing chapters...")
 
     # Render all chapters to HTML
+    src_index_map = build_source_index_map(chapters)
     chapter_html_parts = []
     for i, chapter in enumerate(chapters):
         try:
@@ -135,6 +137,7 @@ def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=
             html_body = md.convert(rendered_md)
 
             html_body = _rewrite_img_srcs(html_body, images_map)
+            html_body = rewrite_cross_links(html_body, src_index_map, 'pdf')
             chapter_html_parts.append(
                 f'<section id="{i}" class="chapter">\n{html_body}\n</section>'
             )

@@ -14,6 +14,7 @@ import yaml
 
 from ebk.core.markdown_processor import get_chapters, get_chapter_title, filter_chapters
 from ebk.core.template_engine import render_chapter
+from ebk.core.links import build_source_index_map, rewrite_cross_links
 from ebk.core.epub_builder import (
     normalize_metadata,
     get_all_files_with_paths,
@@ -440,16 +441,23 @@ def build_odt(project_root, output_path, flags=None, chapters=None,
 
     print("Processing chapters...")
 
+    src_index_map = build_source_index_map(chapters)
     for i, chapter in enumerate(chapters):
         rendered_md = render_chapter(chapter['path'], project_root, book_config)
         md = markdown.Markdown(extensions=[
             'meta', 'codehilite', 'tables', 'fenced_code', 'footnotes', 'md_in_html',
         ])
         html_body = md.convert(rendered_md)
+        html_body = rewrite_cross_links(html_body, src_index_map, 'odt')
 
         # Start each chapter (and the cover/TOC follow-on) on a fresh page
         if i > 0 or not no_cover or not no_toc:
             doc.text.addElement(text.P(stylename=style_names['pagebreak']))
+
+        # Bookmark anchor so cross-links (#chapter-{i}) resolve within the ODT
+        anchor = text.P()
+        anchor.addElement(text.Bookmark(name=f'chapter-{i}'))
+        doc.text.addElement(anchor)
 
         converter = _HTMLToODF(doc, doc.text, style_names, images_map)
         converter.feed(html_body)

@@ -12,6 +12,7 @@ from ebk.core.markdown_processor import (
     discover_files_by_extension
 )
 from ebk.core.template_engine import render_chapter
+from ebk.core.links import build_source_index_map, rewrite_cross_links
 
 
 def get_all_filenames(dir_path, extensions):
@@ -567,6 +568,7 @@ def build_epub(project_root, output_path, flags=None, chapters=None):
         epub.writestr('OPS/toc.ncx', get_TOCNCX_XML(chapters, metadata, has_cover))
 
         # Convert and add chapters
+        src_index_map = build_source_index_map(chapters)
         for i, chapter in enumerate(chapters):
             try:
                 # Render chapter through Jinja2
@@ -574,6 +576,7 @@ def build_epub(project_root, output_path, flags=None, chapters=None):
 
                 # Convert to XHTML
                 xhtml = convert_chapter_to_xhtml(rendered_md, css_files)
+                xhtml = rewrite_cross_links(xhtml, src_index_map, 'epub')
 
                 # Add to EPUB
                 epub.writestr(f'OPS/s{i:05d}.xhtml', xhtml)
