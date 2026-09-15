@@ -10,6 +10,7 @@ A simple, opinionated CLI utility for building EPUB, PDF, and HTML books from ma
 - **Feature flags**: Conditionally render content based on build flags (e.g. presentation vs. print mode)
 - **Deep nesting**: Organize complex books with unlimited folder nesting
 - **Multiple output formats**: EPUB, PDF, HTML, and ODT (LibreOffice)
+- **Styled out of the box**: a sensible base stylesheet applies automatically; override it with your own CSS, or opt in to build-time Tailwind CSS compilation
 - **Built-in linter**: Validate Jinja2 syntax, XHTML, metadata, CSS, and Apple Books compatibility
 - **Single binary**: Package as standalone executable with PyInstaller
 
@@ -262,6 +263,10 @@ output:
 # Base styling (optional)
 # styles:
 #   include_default: false      # opt out of ebk's shipped base stylesheet
+
+# Build-time Tailwind CSS compilation (optional, off by default)
+# tailwind:
+#   enabled: true
 ```
 
 ### Base styling
@@ -420,7 +425,26 @@ ebk -f present -f instructor
 
 ### Tailwind CSS
 
-Define Tailwind class aliases in `config.yaml` and use them in markdown:
+Opt in to build-time Tailwind compilation in `config.yaml`:
+
+```yaml
+tailwind:
+  enabled: true
+```
+
+Then write Tailwind utility classes directly in your markdown:
+
+```markdown
+<div class="rounded-lg shadow p-6 bg-white">
+  <h1 class="text-4xl font-bold text-center">{{ book.title }}</h1>
+</div>
+```
+
+Every build compiles a `tailwind.css` layer automatically and includes it (layered after ebk's base styling, before your own `default_css` files) -- no Node.js, no `npm install`, and no manual CLI step. ebk uses [Tailwind's standalone CLI](https://tailwindcss.com/blog/standalone-cli) under the hood (via the `pytailwindcss` package), which downloads a self-contained binary on first use and caches it, so it needs network access the first time you build with Tailwind enabled. If that download fails (e.g. you're offline), the build continues without the Tailwind layer and prints a warning rather than failing.
+
+Tailwind's scanner reads your project's raw markdown files (and `config.yaml`) for literal class-name strings -- it doesn't execute Jinja2. That means class aliases defined in `config.yaml`'s `tw:` map (see below) are picked up automatically too, since their values live in `config.yaml` as plain text, but a class that *only* ever appears via `{{ tw.card }}` in markdown (never as a literal string anywhere Tailwind scans) won't be detected on its own -- the alias's value in `config.yaml` is what makes it visible.
+
+You can still use `tw:` aliases for convenience, exactly as before:
 
 ```yaml
 tw:
@@ -433,8 +457,6 @@ tw:
   <h1 class="{{ tw.hero }}">{{ book.title }}</h1>
 </div>
 ```
-
-Generate the Tailwind CSS file with the Tailwind CLI and include it in `default_css`.
 
 > **Note:** EPUB reader CSS support varies. Tailwind works best with `--html` output. For e-ink readers, use conventional CSS.
 

@@ -127,3 +127,27 @@ def test_epub_styles_include_default_false_omits_default_css(simple_project, tmp
     with zipfile.ZipFile(str(out)) as zf:
         names = zf.namelist()
     assert 'OPS/css/default.css' not in names
+
+
+def test_epub_tailwind_layer_between_default_and_project_css(simple_project, tmp_path, monkeypatch):
+    from ebk.core.styles import CssLayer
+    import ebk.core.epub_builder as mod
+
+    monkeypatch.setattr(
+        mod, 'try_compile_tailwind_css',
+        lambda project_root, config: CssLayer(name='tailwind.css', text='.text-red-500{color:red}', source='tailwind')
+    )
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'tailwind:\n  enabled: true\n'
+        'default_css:\n  - custom.css\n'
+    )
+    (simple_project / 'custom.css').write_text('body { color: red; }\n')
+    out = tmp_path / 'out.epub'
+    build_epub(str(simple_project), str(out))
+    with zipfile.ZipFile(str(out)) as zf:
+        names = zf.namelist()
+        chapter = zf.read('OPS/s00000.xhtml').decode()
+
+    assert 'OPS/css/tailwind.css' in names
+    assert chapter.index('css/default.css') < chapter.index('css/tailwind.css') < chapter.index('css/custom.css')

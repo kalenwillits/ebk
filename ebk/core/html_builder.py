@@ -15,6 +15,7 @@ from ebk.core.styles import (
     copy_default_fonts,
     get_all_files_with_paths,
 )
+from ebk.core.tailwind import try_compile_tailwind_css
 
 
 def convert_chapter_to_html(md_content, css_files, title=""):
@@ -86,7 +87,10 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
     css_extensions = discovery_config.get('css_extensions', ['.css'])
     image_extensions = discovery_config.get('image_extensions', ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
 
-    css_layers = resolve_css_layers(project_root, book_config, exclude_dirs, css_extensions)
+    tailwind_layer = try_compile_tailwind_css(project_root, book_config)
+    css_layers = resolve_css_layers(
+        project_root, book_config, exclude_dirs, css_extensions, tailwind_css=tailwind_layer
+    )
     css_files = [layer.name for layer in css_layers]
 
     images_map = get_all_files_with_paths(project_root, image_extensions, exclude_dirs)

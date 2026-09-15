@@ -15,6 +15,7 @@ from ebk.core.styles import (
     default_css_enabled,
     get_all_files_with_paths,
 )
+from ebk.core.tailwind import try_compile_tailwind_css
 
 
 def _rewrite_img_srcs(html, images_map):
@@ -109,8 +110,10 @@ def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=
     # to override everything, per the existing "CLI overrides project CSS"
     # ordering below.
     default_layer_text = load_default_css().text if default_css_enabled(book_config) else ""
+    tailwind_layer = try_compile_tailwind_css(project_root, book_config)
     project_css_layers = resolve_css_layers(
-        project_root, book_config, exclude_dirs, css_extensions, include_default=False
+        project_root, book_config, exclude_dirs, css_extensions,
+        include_default=False, tailwind_css=tailwind_layer
     )
     css_content = render_inline_style_block(project_css_layers)
 

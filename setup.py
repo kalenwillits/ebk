@@ -29,6 +29,7 @@ setup(
         'weasyprint>=60.0',
         'odfpy>=1.4',
         'pypdf>=4.0',
+        'pytailwindcss>=0.2.0',
     ],
     entry_points={
         'console_scripts': [

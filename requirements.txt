@@ -4,6 +4,7 @@ PyYAML>=6.0
 weasyprint>=60.0
 odfpy>=1.4
 pypdf>=4.0
+pytailwindcss>=0.2.0
 PyInstaller>=5.0
 altgraph==0.17.5
 # Editable Git install with no remote (ebk==1.0.0)
@@ -38,6 +39,7 @@ pycparser==3.0
 pydyf==0.12.1
 Pygments==2.19.2
 pypdf==6.13.2
+pytailwindcss==0.2.0
 pyinstaller==6.17.0
 pyinstaller-hooks-contrib==2025.10
 pyphen==0.17.2

@@ -99,3 +99,25 @@ def test_html_styles_include_default_false_omits_default_css(simple_project, tmp
     build_html(str(simple_project), str(out))
     assert not (out / 'css' / 'default.css').exists()
     assert not (out / 'fonts').exists()
+
+
+def test_html_tailwind_layer_between_default_and_project_css(simple_project, tmp_path, monkeypatch):
+    from ebk.core.styles import CssLayer
+    import ebk.core.html_builder as mod
+
+    monkeypatch.setattr(
+        mod, 'try_compile_tailwind_css',
+        lambda project_root, config: CssLayer(name='tailwind.css', text='.text-red-500{color:red}', source='tailwind')
+    )
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'tailwind:\n  enabled: true\n'
+        'default_css:\n  - custom.css\n'
+    )
+    (simple_project / 'custom.css').write_text('body { color: red; }\n')
+    out = tmp_path / 'html'
+    build_html(str(simple_project), str(out))
+
+    assert (out / 'css' / 'tailwind.css').exists()
+    index = (out / 'index.html').read_text()
+    assert index.index('css/default.css') < index.index('css/tailwind.css') < index.index('css/custom.css')

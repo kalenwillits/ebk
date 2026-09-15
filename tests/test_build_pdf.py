@@ -234,3 +234,20 @@ def test_pdf_default_css_config_is_applied(simple_project, tmp_path):
     )
     html = _capture_css(simple_project, tmp_path)
     assert 'color: purple' in html
+
+
+def test_pdf_tailwind_layer_present(simple_project, tmp_path, monkeypatch):
+    from ebk.core.styles import CssLayer
+    import ebk.core.pdf_builder as mod
+
+    monkeypatch.setattr(
+        mod, 'try_compile_tailwind_css',
+        lambda project_root, config: CssLayer(name='tailwind.css', text='.text-red-500{color:red}', source='tailwind')
+    )
+    (simple_project / 'config.yaml').write_text(
+        (simple_project / 'config.yaml').read_text() + 'tailwind:\n  enabled: true\n'
+    )
+    html = _capture_css(simple_project, tmp_path)
+    assert 'text-red-500' in html
+    # Tailwind renders after the hardcoded print rules, alongside project CSS
+    assert html.index('font-family: Georgia') < html.index('text-red-500')

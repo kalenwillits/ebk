@@ -20,6 +20,7 @@ from ebk.core.styles import (
     render_css_links,
     write_css_layers_epub,
 )
+from ebk.core.tailwind import try_compile_tailwind_css
 
 
 _METADATA_KEY_MAP = {
@@ -444,7 +445,10 @@ def build_epub(project_root, output_path, flags=None, chapters=None):
 
     # Resolve CSS layers: default.css base, then project CSS (default_css: +
     # recursive discovery + legacy assets/css/ fallback)
-    css_layers = resolve_css_layers(project_root, book_config, exclude_dirs, css_extensions)
+    tailwind_layer = try_compile_tailwind_css(project_root, book_config)
+    css_layers = resolve_css_layers(
+        project_root, book_config, exclude_dirs, css_extensions, tailwind_css=tailwind_layer
+    )
     css_files = [layer.name for layer in css_layers]
 
     # Get images with recursive discovery
