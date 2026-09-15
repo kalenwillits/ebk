@@ -94,3 +94,36 @@ def test_epub_flags_absent_by_default(simple_project, tmp_path):
     with zipfile.ZipFile(str(out)) as zf:
         chapter = zf.read('OPS/s00000.xhtml').decode()
     assert 'SLIDE' not in chapter
+
+
+def test_epub_includes_default_css_before_project_css(simple_project, tmp_path):
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'default_css:\n  - custom.css\n'
+    )
+    (simple_project / 'custom.css').write_text('body { color: red; }\n')
+    out = tmp_path / 'out.epub'
+    build_epub(str(simple_project), str(out))
+    with zipfile.ZipFile(str(out)) as zf:
+        names = zf.namelist()
+        chapter = zf.read('OPS/s00000.xhtml').decode()
+        default_css_text = zf.read('OPS/css/default.css').decode()
+
+    assert 'OPS/css/default.css' in names
+    assert 'OPS/css/custom.css' in names
+    # default.css must be linked before the project's own custom.css so the
+    # cascade lets custom.css override it
+    assert chapter.index('css/default.css') < chapter.index('css/custom.css')
+    assert 'Default CSS for ebk-generated EPUB books' in default_css_text
+
+
+def test_epub_styles_include_default_false_omits_default_css(simple_project, tmp_path):
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'styles:\n  include_default: false\n'
+    )
+    out = tmp_path / 'out.epub'
+    build_epub(str(simple_project), str(out))
+    with zipfile.ZipFile(str(out)) as zf:
+        names = zf.namelist()
+    assert 'OPS/css/default.css' not in names

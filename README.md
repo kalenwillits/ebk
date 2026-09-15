@@ -253,6 +253,21 @@ output:
   pdf_filename: "my-book.pdf"  # optional, defaults to project dir name
   odt_filename: "my-book.odt"  # optional, defaults to project dir name
   html_dir: "html"             # optional, defaults to "html"
+
+# Base styling (optional)
+# styles:
+#   include_default: false      # opt out of ebk's shipped base stylesheet
+```
+
+### Base styling
+
+Every build (EPUB, HTML, and PDF) automatically applies ebk's shipped base stylesheet first, before your own `default_css` files -- so headings, tables, blockquotes, code blocks, and links have sensible styling even in a project with no CSS at all. Your own CSS is loaded after it, so anything you set (fonts, colors, spacing) overrides the base via the normal CSS cascade. PDF is the one exception for typography specifically: its print-oriented base rules (serif body text, sans-serif headings, page breaks) are layered on top of ebk's default stylesheet so print output keeps a deliberate, consistent look regardless of the shared base -- your own CSS still overrides those too.
+
+Opt out entirely with:
+
+```yaml
+styles:
+  include_default: false
 ```
 
 ## Writing Content

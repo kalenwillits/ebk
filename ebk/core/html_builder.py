@@ -8,6 +8,13 @@ import yaml
 from ebk.core.markdown_processor import get_chapters, get_chapter_title, filter_chapters
 from ebk.core.template_engine import render_chapter
 from ebk.core.links import build_source_index_map, rewrite_cross_links
+from ebk.core.styles import (
+    resolve_css_layers,
+    render_css_links,
+    write_css_layers_dir,
+    copy_default_fonts,
+    get_all_files_with_paths,
+)
 
 
 def convert_chapter_to_html(md_content, css_files, title=""):
@@ -23,10 +30,7 @@ def convert_chapter_to_html(md_content, css_files, title=""):
 
     body = md.convert(md_content)
 
-    css_links = '\n'.join([
-        f'  <link rel="stylesheet" href="css/{css}">'
-        for css in css_files
-    ])
+    css_links = render_css_links(css_files)
 
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -77,21 +81,13 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
 
     print(f"  Found {len(chapters)} chapters")
 
-    # Collect CSS files
-    from ebk.core.epub_builder import get_all_files_with_paths
+    # Resolve CSS layers: default.css base, then project CSS (default_css: +
+    # recursive discovery + legacy assets/css/ fallback)
     css_extensions = discovery_config.get('css_extensions', ['.css'])
     image_extensions = discovery_config.get('image_extensions', ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
 
-    css_files_map = get_all_files_with_paths(project_root, css_extensions, exclude_dirs)
-    css_files = list(css_files_map.keys())
-
-    if 'default_css' in book_config:
-        for css in book_config['default_css']:
-            if css not in css_files:
-                legacy_path = os.path.join(project_root, 'assets', 'css', css)
-                if os.path.exists(legacy_path):
-                    css_files.append(css)
-                    css_files_map[css] = legacy_path
+    css_layers = resolve_css_layers(project_root, book_config, exclude_dirs, css_extensions)
+    css_files = [layer.name for layer in css_layers]
 
     images_map = get_all_files_with_paths(project_root, image_extensions, exclude_dirs)
 
@@ -128,10 +124,7 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
 
     # Write index.html
     if not no_toc:
-        css_links = '\n'.join([
-            f'  <link rel="stylesheet" href="css/{css}">'
-            for css in css_files
-        ])
+        css_links = render_css_links(css_files)
         toc_list = '\n'.join(toc_items)
         index_html = f'''<!DOCTYPE html>
 <html lang="en">
@@ -154,10 +147,10 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
         with open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8') as f:
             f.write(index_html)
 
-    # Copy CSS
-    for css, path in css_files_map.items():
-        if os.path.exists(path):
-            shutil.copy2(path, os.path.join(css_out, css))
+    # Write CSS layers, plus the fonts default.css's @font-face rules point at
+    write_css_layers_dir(css_layers, css_out)
+    if any(layer.source == 'default' for layer in css_layers):
+        copy_default_fonts(os.path.join(output_dir, 'fonts'))
 
     # Copy images
     for img, path in images_map.items():

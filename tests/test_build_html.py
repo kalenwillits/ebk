@@ -59,3 +59,43 @@ def test_html_chapter_selection(simple_project, tmp_path):
     build_html(str(simple_project), str(out), chapters=['1'])
     assert (out / 's00000.html').exists()
     assert not (out / 's00001.html').exists()
+
+
+def test_html_includes_default_css_before_project_css(simple_project, tmp_path):
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'default_css:\n  - custom.css\n'
+    )
+    (simple_project / 'custom.css').write_text('body { color: red; }\n')
+    out = tmp_path / 'html'
+    build_html(str(simple_project), str(out))
+
+    assert (out / 'css' / 'default.css').exists()
+    assert (out / 'css' / 'custom.css').exists()
+    assert (out / 'fonts' / 'Ubuntu-Regular.ttf').exists()
+
+    index = (out / 'index.html').read_text()
+    assert index.index('css/default.css') < index.index('css/custom.css')
+
+
+def test_html_missing_default_css_entry_warns(simple_project, tmp_path, capsys):
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'default_css:\n  - missing.css\n'
+    )
+    out = tmp_path / 'html'
+    build_html(str(simple_project), str(out))
+    err_and_out = capsys.readouterr()
+    assert 'missing.css' in err_and_out.out
+    assert not (out / 'css' / 'missing.css').exists()
+
+
+def test_html_styles_include_default_false_omits_default_css(simple_project, tmp_path):
+    (simple_project / 'config.yaml').write_text(
+        'metadata:\n  title: Test Book\n'
+        'styles:\n  include_default: false\n'
+    )
+    out = tmp_path / 'html'
+    build_html(str(simple_project), str(out))
+    assert not (out / 'css' / 'default.css').exists()
+    assert not (out / 'fonts').exists()

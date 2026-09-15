@@ -205,3 +205,32 @@ def test_pdf_font_size_overrides_project_body_css(simple_project, tmp_path):
     build_pdf(str(simple_project), str(big), font_size=24)
     # Larger font must produce at least as many pages (font-size took effect)
     assert len(PdfReader(str(big)).pages) > len(PdfReader(str(small)).pages)
+
+
+def test_pdf_includes_default_css_before_print_rules(simple_project, tmp_path):
+    """default.css renders before the hardcoded Georgia/print base rule, so
+    that rule (and project CSS/CLI overrides after it) still wins the cascade."""
+    html = _capture_css(simple_project, tmp_path)
+    assert 'Default CSS for ebk-generated EPUB books' in html
+    assert html.index('Default CSS for ebk-generated EPUB books') < html.index('font-family: Georgia')
+
+
+def test_pdf_default_css_disabled_via_styles_config(simple_project, tmp_path):
+    (simple_project / 'config.yaml').write_text(
+        (simple_project / 'config.yaml').read_text() + 'styles:\n  include_default: false\n'
+    )
+    html = _capture_css(simple_project, tmp_path)
+    assert 'Default CSS for ebk-generated EPUB books' not in html
+
+
+def test_pdf_default_css_config_is_applied(simple_project, tmp_path):
+    """PDF previously ignored `default_css:`; it must now honor it, including
+    the legacy assets/css/<name> fallback."""
+    css_dir = simple_project / 'assets' / 'css'
+    css_dir.mkdir(parents=True)
+    (css_dir / 'custom.css').write_text('blockquote { color: purple; }')
+    (simple_project / 'config.yaml').write_text(
+        (simple_project / 'config.yaml').read_text() + 'default_css:\n  - custom.css\n'
+    )
+    html = _capture_css(simple_project, tmp_path)
+    assert 'color: purple' in html

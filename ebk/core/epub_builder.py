@@ -9,83 +9,17 @@ from ebk.core.markdown_processor import (
     get_chapters,
     get_chapter_title,
     filter_chapters,
-    discover_files_by_extension
 )
 from ebk.core.template_engine import render_chapter
 from ebk.core.links import build_source_index_map, rewrite_cross_links
-
-
-def get_all_filenames(dir_path, extensions):
-    """
-    Get all files with specified extensions in directory (legacy function).
-
-    NOTE: This function is kept for backward compatibility but only searches
-    a single directory non-recursively. New code should use
-    get_all_files_with_paths() or get_all_filenames_recursive().
-    """
-    if not os.path.exists(dir_path):
-        return []
-
-    files = []
-    for item in os.listdir(dir_path):
-        full_path = os.path.join(dir_path, item)
-        if os.path.isfile(full_path):
-            if any(item.lower().endswith(ext) for ext in extensions):
-                files.append(item)
-    return sorted(files)
-
-
-def get_all_files_with_paths(project_root, extensions, exclude_dirs=None):
-    """
-    Get all files with full paths for reading during EPUB build.
-
-    Args:
-        project_root: Root directory to search recursively
-        extensions: List of file extensions to match (e.g., ['.css', '.jpg'])
-        exclude_dirs: List of directory names to exclude
-
-    Returns:
-        dict: Mapping of filename -> full path
-
-    Note: If duplicate filenames exist in different directories,
-    the last one in sorted order wins.
-    """
-    full_paths = discover_files_by_extension(project_root, extensions, exclude_dirs)
-
-    # Create mapping: filename -> full path
-    # If duplicate filenames exist, last one wins (sorted order)
-    file_map = {}
-    duplicates = set()
-
-    for path in sorted(full_paths):
-        filename = os.path.basename(path)
-        if filename in file_map:
-            duplicates.add(filename)
-        file_map[filename] = path
-
-    # Warn about duplicates
-    if duplicates:
-        print(f"  Warning: Found duplicate filenames (using last in sorted order):")
-        for dup in sorted(duplicates):
-            print(f"    - {dup}")
-
-    return file_map
-
-
-def get_all_filenames_recursive(project_root, extensions, exclude_dirs=None):
-    """
-    Get all files with specified extensions recursively from project root.
-
-    Args:
-        project_root: Root directory to search
-        extensions: List of file extensions to match
-        exclude_dirs: List of directory names to exclude
-
-    Returns:
-        list: Filenames only (without paths) sorted alphabetically
-    """
-    file_map = get_all_files_with_paths(project_root, extensions, exclude_dirs)
-    return sorted(file_map.keys())
+from ebk.core.styles import (
+    get_all_filenames,
+    get_all_files_with_paths,
+    get_all_filenames_recursive,
+    resolve_css_layers,
+    render_css_links,
+    write_css_layers_epub,
+)
 
 
 _METADATA_KEY_MAP = {
@@ -125,10 +59,7 @@ def get_container_XML():
 
 def get_coverpage_XML(cover_image, css_files):
     """Generate titlepage.xhtml for cover image."""
-    css_links = '\n'.join([
-        f'  <link rel="stylesheet" type="text/css" href="css/{css}" />'
-        for css in css_files
-    ])
+    css_links = render_css_links(css_files, xhtml=True)
 
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -149,10 +80,7 @@ def get_TOC_XML(css_files, chapters, has_cover):
     """Generate TOC.xhtml (EPUB 3 navigation)."""
     from html import escape as html_escape
 
-    css_links = '\n'.join([
-        f'  <link rel="stylesheet" type="text/css" href="css/{css}" />'
-        for css in css_files
-    ])
+    css_links = render_css_links(css_files, xhtml=True)
 
     # Build navigation list
     nav_items = []
@@ -440,10 +368,7 @@ def convert_chapter_to_xhtml(md_content, css_files):
     html_content = md.convert(md_content)
 
     # Wrap in XHTML structure
-    css_links = '\n'.join([
-        f'  <link rel="stylesheet" type="text/css" href="css/{css}" />'
-        for css in css_files
-    ])
+    css_links = render_css_links(css_files, xhtml=True)
 
     xhtml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -517,25 +442,10 @@ def build_epub(project_root, output_path, flags=None, chapters=None):
 
     print(f"  Found {len(chapters)} chapters")
 
-    # Get CSS files with recursive discovery
-    css_files_map = get_all_files_with_paths(project_root, css_extensions, exclude_dirs)
-    css_files = list(css_files_map.keys())
-
-    # Add default CSS from book config
-    if 'default_css' in book_config:
-        for css in book_config['default_css']:
-            if css not in css_files:
-                # Try to find it - might already be in the map
-                if css in css_files_map:
-                    css_files.append(css)
-                else:
-                    # Check legacy location for backward compatibility
-                    legacy_css_path = os.path.join(project_root, 'assets', 'css', css)
-                    if os.path.exists(legacy_css_path):
-                        css_files.append(css)
-                        css_files_map[css] = legacy_css_path
-                    else:
-                        print(f"  Warning: CSS file '{css}' not found")
+    # Resolve CSS layers: default.css base, then project CSS (default_css: +
+    # recursive discovery + legacy assets/css/ fallback)
+    css_layers = resolve_css_layers(project_root, book_config, exclude_dirs, css_extensions)
+    css_files = [layer.name for layer in css_layers]
 
     # Get images with recursive discovery
     images_map = get_all_files_with_paths(project_root, image_extensions, exclude_dirs)
@@ -586,13 +496,7 @@ def build_epub(project_root, output_path, flags=None, chapters=None):
                 raise
 
         # Add CSS files
-        for css in css_files:
-            css_path = css_files_map.get(css)
-            if css_path and os.path.exists(css_path):
-                with open(css_path, 'r') as f:
-                    epub.writestr(f'OPS/css/{css}', f.read())
-            else:
-                print(f"  Warning: CSS file '{css}' not found, skipping")
+        write_css_layers_epub(epub, css_layers)
 
         # Add images
         for img in images:

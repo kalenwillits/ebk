@@ -8,6 +8,13 @@ from ebk.core.markdown_processor import get_chapters, get_chapter_title, filter_
 from ebk.core.links import build_source_index_map, rewrite_cross_links
 from ebk.core.template_engine import render_chapter
 from ebk.core.epub_builder import normalize_metadata
+from ebk.core.styles import (
+    resolve_css_layers,
+    render_inline_style_block,
+    load_default_css,
+    default_css_enabled,
+    get_all_files_with_paths,
+)
 
 
 def _rewrite_img_srcs(html, images_map):
@@ -89,20 +96,23 @@ def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=
 
     print(f"  Found {len(chapters)} chapters")
 
-    # Build CSS and image file maps from project files
-    from ebk.core.epub_builder import get_all_files_with_paths
+    # Build image file map from project files
     css_extensions = discovery_config.get('css_extensions', ['.css'])
-    css_files_map = get_all_files_with_paths(project_root, css_extensions, exclude_dirs)
-
     image_extensions = discovery_config.get('image_extensions', ['.jpg', '.jpeg', '.png', '.gif', '.svg'])
     images_map = get_all_files_with_paths(project_root, image_extensions, exclude_dirs)
 
-    # Collect CSS content
-    css_content = ""
-    for css_path in css_files_map.values():
-        if os.path.exists(css_path):
-            with open(css_path, 'r') as f:
-                css_content += f.read() + "\n"
+    # default.css renders before the hardcoded print rules below so those
+    # rules (Georgia body, Arial headings, page-break handling) intentionally
+    # override default.css's general/web-oriented choices; project CSS
+    # (resolved with default.css excluded here, since it's rendered
+    # separately above the print rules) still renders after, and continues
+    # to override everything, per the existing "CLI overrides project CSS"
+    # ordering below.
+    default_layer_text = load_default_css().text if default_css_enabled(book_config) else ""
+    project_css_layers = resolve_css_layers(
+        project_root, book_config, exclude_dirs, css_extensions, include_default=False
+    )
+    css_content = render_inline_style_block(project_css_layers)
 
     # Build table of contents HTML
     if no_toc:
@@ -180,6 +190,7 @@ def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=
   <title>{title}</title>
   <style>
     @page {{ size: {page_size}; margin: {margin_cm}cm; }}
+    {default_layer_text}
     body {{ font-family: Georgia, serif; font-size: {base_font_size}pt; line-height: 1.6; margin: 0; }}
     h1, h2, h3, h4, h5, h6 {{ font-family: Arial, sans-serif; }}
     .chapter {{ page-break-before: always; }}
