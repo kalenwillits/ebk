@@ -6,29 +6,31 @@ An EPUB book project created with [ebk](https://github.com/anthropics/ebk).
 
 ebk finds your content by file extension, not directory location. Organize however you prefer!
 
-**Suggested structure** (created by scaffolding):
+**What scaffolding creates:**
 ```
 .
 ├── config.yaml              # Book metadata and configuration
-├── pages/                 # Markdown chapters (optional - can be anywhere)
-│   └── 01-introduction.md
-├── context/               # Jinja2 template variables
-│   └── global.yaml
-├── assets/
-│   ├── images/           # Images (optional - can be anywhere)
-│   └── css/              # Stylesheets (optional - can be anywhere)
-│       └── custom.css
+├── 01-introduction.md       # A starter chapter -- edit or replace it
+├── custom.css               # Starter stylesheet (overrides ebk's base styling)
+├── context/
+│   └── global.yaml          # Jinja2 template variables
 └── README.md
 ```
 
-**Flat structure** (also works):
+This flat layout is just a starting point -- add more markdown files, images, and CSS anywhere in the project, nested however you like:
+
 ```
 .
 ├── config.yaml
-├── 01-intro.md           # Chapters in root
-├── 02-getting-started.md
-├── cover.jpg             # Images in root
-├── custom.css            # CSS in root
+├── 01-intro.md
+├── 02-getting-started/
+│   ├── _chapter.md
+│   └── 01-installation.md
+├── cover.jpg
+├── custom.css
+├── assets/
+│   ├── images/
+│   └── css/
 └── context/
     └── global.yaml
 ```

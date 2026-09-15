@@ -64,6 +64,33 @@ def create_directory_structure(project_dir):
     pass
 
 
+def _substitute_template_vars(content, template_vars):
+    """Replace {var_name} placeholders in template content."""
+    for var, value in template_vars.items():
+        content = content.replace(f'{{{var}}}', value)
+    return content
+
+
+def _copy_templated_file(src_path, dest_path, template_vars, overwrite=True):
+    """Copy a template file to dest_path, substituting {var} placeholders.
+
+    If overwrite is False, an existing file at dest_path is left untouched
+    (used for scaffolding into a directory that may already have content, so
+    re-running scaffolding doesn't clobber a user's work).
+    """
+    if not overwrite and os.path.exists(dest_path):
+        return False
+
+    with open(src_path, 'r') as f:
+        content = f.read()
+
+    content = _substitute_template_vars(content, template_vars)
+
+    with open(dest_path, 'w') as f:
+        f.write(content)
+    return True
+
+
 def copy_and_populate_templates(project_dir, book_name):
     """Copy essential template files and populate variables."""
     template_dir = get_template_path()
@@ -83,15 +110,42 @@ def copy_and_populate_templates(project_dir, book_name):
         'output_filename': output_filename,
     }
 
-    # Copy and populate config.yaml
-    with open(template_dir / 'config.yaml', 'r') as f:
-        book_yaml_content = f.read()
+    # Copy and populate config.yaml (always overwritten -- this is what
+    # marks the directory as a fresh ebk project)
+    _copy_templated_file(
+        template_dir / 'config.yaml',
+        os.path.join(project_dir, 'config.yaml'),
+        template_vars,
+    )
 
-    for var, value in template_vars.items():
-        book_yaml_content = book_yaml_content.replace(f'{{{var}}}', value)
-
-    with open(os.path.join(project_dir, 'config.yaml'), 'w') as f:
-        f.write(book_yaml_content)
+    # Copy starter content, non-destructively: skip any file that already
+    # exists so re-scaffolding into a partially-populated directory doesn't
+    # clobber a user's work.
+    _copy_templated_file(
+        template_dir / 'chapter.md',
+        os.path.join(project_dir, '01-introduction.md'),
+        template_vars,
+        overwrite=False,
+    )
+    _copy_templated_file(
+        template_dir / 'custom.css',
+        os.path.join(project_dir, 'custom.css'),
+        template_vars,
+        overwrite=False,
+    )
+    os.makedirs(os.path.join(project_dir, 'context'), exist_ok=True)
+    _copy_templated_file(
+        template_dir / 'global.yaml',
+        os.path.join(project_dir, 'context', 'global.yaml'),
+        template_vars,
+        overwrite=False,
+    )
+    _copy_templated_file(
+        template_dir / 'README.md',
+        os.path.join(project_dir, 'README.md'),
+        template_vars,
+        overwrite=False,
+    )
 
     # Create .ebk marker file
     with open(os.path.join(project_dir, '.ebk'), 'w') as f:
@@ -148,11 +202,11 @@ def create_new_book(project_path):
     copy_and_populate_templates(str(path), book_name)
 
     print("  ✓ Initialized ebk project")
-    print("  ✓ Created config.yaml")
+    print("  ✓ Created config.yaml, 01-introduction.md, custom.css, context/global.yaml, README.md")
     print()
     print("Project ready! ebk works recursively, so organize your files however you prefer.")
     print("Next steps:")
     print(f"  1. cd {path.name if path != Path.cwd() else '.'}")
     print("  2. Edit config.yaml with your book metadata")
-    print("  3. Add markdown files anywhere in the project")
+    print("  3. Edit 01-introduction.md, or add markdown files anywhere in the project")
     print("  4. Run 'ebk' to build your book")

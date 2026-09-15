@@ -1,0 +1,21 @@
+/* Your book's styling.
+ *
+ * ebk already applies a sensible base stylesheet to every build (headings,
+ * tables, code blocks, links, etc.) -- see ebk/resources/default.css in the
+ * ebk package, or the "Base styling" section of the README. Anything you set
+ * here overrides that base, so you only need to touch what you want to change.
+ *
+ * See the README's "Configuration" and "Output Formats" sections for more.
+ */
+
+:root {
+  --accent-color: #0066cc;
+}
+
+a {
+  color: var(--accent-color);
+}
+
+blockquote {
+  border-left-color: var(--accent-color);
+}

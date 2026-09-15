@@ -164,6 +164,12 @@ def discover_chapters(content_dir, exclude_dirs=None):
             if exclude_dirs and should_exclude_path(full_path, exclude_dirs, content_dir):
                 continue
 
+            # README.md is project documentation, never chapter content --
+            # skip it regardless of nesting depth (e.g. a project README at
+            # the root, discovered when discovery.root is ".")
+            if os.path.isfile(full_path) and item.lower() == 'readme.md':
+                continue
+
             if os.path.isfile(full_path) and item.endswith('.md'):
                 # Read file to get frontmatter
                 try:

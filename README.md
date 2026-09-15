@@ -196,11 +196,16 @@ Flags are available in any markdown file as a Jinja2 set:
 
 ```
 my-book/
-├── config.yaml         # Book metadata and configuration
-├── .ebk              # Project marker file
-├── README.md         # Project-specific guide
-└── custom.css        # Custom stylesheet
+├── config.yaml               # Book metadata and configuration
+├── .ebk                      # Project marker file
+├── 01-introduction.md        # Starter chapter
+├── custom.css                # Custom stylesheet
+├── context/
+│   └── global.yaml           # Jinja2 template variables
+└── README.md                 # Project-specific guide
 ```
+
+All of this (except `.ebk`) is created for you by `ebk "My Book"` and is safe to edit, rename, or delete.
 
 ebk discovers content recursively — add markdown files anywhere in the project. Use numeric prefixes or frontmatter `order:` to control chapter order.
 
