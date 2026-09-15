@@ -6,7 +6,7 @@ An EPUB book project created with [ebk](https://github.com/anthropics/ebk).
 
 ```
 .
-├── book.yaml              # Book metadata and configuration
+├── config.yaml              # Book metadata and configuration
 ├── pages/                 # Your markdown chapters (supports deep nesting)
 │   └── 01-introduction.md
 ├── context/               # Jinja2 context files for template variables
@@ -64,15 +64,15 @@ Place all book images here. Reference them in markdown:
 ```
 
 ### assets/css/
-Add custom stylesheets here. Specify them in `book.yaml`:
+Add custom stylesheets here. Specify them in `config.yaml`:
 ```yaml
 default_css:
   - "custom.css"
 ```
 
-## Configuration (book.yaml)
+## Configuration (config.yaml)
 
-Edit `book.yaml` to set:
+Edit `config.yaml` to set:
 - Book metadata (title, author, language, etc.)
 - Cover image location (optional)
 - CSS files to include

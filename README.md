@@ -41,11 +41,11 @@ pip install ebk
 ```bash
 ebk "My First Book"
 cd my-first-book
-# Add your markdown files, edit book.yaml
+# Add your markdown files, edit config.yaml
 ebk
 ```
 
-Your EPUB will be generated in the project root.
+Your PDF will be generated in the project root.
 
 ## Usage
 
@@ -53,14 +53,24 @@ Your EPUB will be generated in the project root.
 
 ```bash
 ebk "Book Name"    # Create new book project
-ebk                # Build EPUB from current directory
-ebk --html         # Build HTML output
+ebk                # Build the default output format (PDF, unless output.format is set in config.yaml)
 ebk --pdf          # Build PDF
+ebk --epub         # Build EPUB
+ebk --html         # Build HTML output
 ebk --odt          # Build ODT (LibreOffice / OpenDocument Text)
 ebk --check        # Lint project for errors
 ebk --version      # Show version
 ebk --help         # Show help
 ```
+
+Set a different default in `config.yaml` so bare `ebk` builds that format instead:
+
+```yaml
+output:
+  format: epub   # pdf (default) | epub | html | odt
+```
+
+An explicit `--pdf`/`--epub`/`--html`/`--odt` flag always overrides `output.format`.
 
 ### PDF Options
 
@@ -145,7 +155,7 @@ ebk --check -f present           # Lint with feature flag enabled
 ```
 
 The linter checks:
-- **book.yaml**: required and recommended metadata fields, YAML syntax, BCP 47 language tags
+- **config.yaml**: required and recommended metadata fields, YAML syntax, BCP 47 language tags
 - **Jinja2 templates**: syntax errors and undefined variables in every chapter
 - **XHTML well-formedness**: generated output is valid XML (required by EPUB spec)
 - **HTML compatibility**: flags tags unsupported by Apple Books (`<video>`, `<audio>`, `<iframe>`, `<script>`, `<form>`, etc.)
@@ -186,7 +196,7 @@ Flags are available in any markdown file as a Jinja2 set:
 
 ```
 my-book/
-├── book.yaml         # Book metadata and configuration
+├── config.yaml         # Book metadata and configuration
 ├── .ebk              # Project marker file
 ├── README.md         # Project-specific guide
 └── custom.css        # Custom stylesheet
@@ -207,7 +217,7 @@ my-book/
 
 Files named `_chapter.md` serve as introductions for their folder.
 
-## Configuration (book.yaml)
+## Configuration (config.yaml)
 
 ```yaml
 metadata:
@@ -236,10 +246,12 @@ discovery:
     - "dist"
     - "context"
 
-# Output filenames
+# Output format and filenames
 output:
+  format: "pdf"                 # pdf (default) | epub | html | odt -- format bare `ebk` builds; a CLI flag (--pdf/--epub/--html/--odt) overrides this
   filename: "my-book.epub"
   pdf_filename: "my-book.pdf"  # optional, defaults to project dir name
+  odt_filename: "my-book.odt"  # optional, defaults to project dir name
   html_dir: "html"             # optional, defaults to "html"
 ```
 
@@ -315,23 +327,23 @@ Special content for MyApp!
 
 ## Output Formats
 
-### EPUB
+### PDF (default)
 
 ```bash
 ebk
-```
-
-Generates a valid EPUB 3 file with backward-compatible EPUB 2 TOC, embedded fonts, and all images and CSS bundled.
-
-### PDF
-
-```bash
-ebk --pdf
 ebk --pdf --font-size 14
 ebk --pdf --landscape
 ```
 
-Requires `weasyprint` (`pip install weasyprint`). Uses A4 page size by default.
+Requires `weasyprint` (`pip install weasyprint`). Uses A4 page size by default. This is what bare `ebk` builds unless `output.format` in `config.yaml` says otherwise.
+
+### EPUB
+
+```bash
+ebk --epub
+```
+
+Generates a valid EPUB 3 file with backward-compatible EPUB 2 TOC, embedded fonts, and all images and CSS bundled.
 
 ### HTML
 
@@ -339,7 +351,7 @@ Requires `weasyprint` (`pip install weasyprint`). Uses A4 page size by default.
 ebk --html
 ```
 
-Outputs to `html/` (configurable via `output.html_dir` in `book.yaml`):
+Outputs to `html/` (configurable via `output.html_dir` in `config.yaml`):
 
 ```
 html/
@@ -388,7 +400,7 @@ ebk -f present -f instructor
 
 ### Tailwind CSS
 
-Define Tailwind class aliases in `book.yaml` and use them in markdown:
+Define Tailwind class aliases in `config.yaml` and use them in markdown:
 
 ```yaml
 tw:
@@ -408,7 +420,7 @@ Generate the Tailwind CSS file with the Tailwind CLI and include it in `default_
 
 ### Cover Image
 
-Place an image anywhere in the project and reference it in `book.yaml`:
+Place an image anywhere in the project and reference it in `config.yaml`:
 
 ```yaml
 cover_image: "cover.jpg"
@@ -469,7 +481,7 @@ ebk/
 
 ## How It Works
 
-1. **Project creation**: `ebk "Book Name"` initializes `book.yaml` and project files
+1. **Project creation**: `ebk "Book Name"` initializes `config.yaml` and project files
 2. **Chapter discovery**: Recursively scans the project for markdown files
 3. **Ordering**: Uses numeric prefixes or frontmatter `order:` field
 4. **Jinja2 rendering**: Applies templates before markdown conversion; injects `flags`, `book`, context variables
@@ -478,11 +490,11 @@ ebk/
 
 ## Troubleshooting
 
-**"Error: Not an ebk project"** — Make sure you're in a directory with `.ebk` and `book.yaml`.
+**"Error: Not an ebk project"** — Make sure you're in a directory with `.ebk` and `config.yaml`.
 
-**"No markdown files found"** — Check your `discovery.root` and `discovery.exclude` settings in `book.yaml`.
+**"No markdown files found"** — Check your `discovery.root` and `discovery.exclude` settings in `config.yaml`.
 
-**"Error parsing book.yaml"** — Verify YAML syntax with a YAML validator.
+**"Error parsing config.yaml"** — Verify YAML syntax with a YAML validator.
 
 **Template errors** — Check Jinja2 syntax; the error message includes the line number. Run `ebk --check` to find all template issues before building.
 

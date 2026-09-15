@@ -9,7 +9,7 @@ ebk finds your content by file extension, not directory location. Organize howev
 **Suggested structure** (created by scaffolding):
 ```
 .
-├── book.yaml              # Book metadata and configuration
+├── config.yaml              # Book metadata and configuration
 ├── pages/                 # Markdown chapters (optional - can be anywhere)
 │   └── 01-introduction.md
 ├── context/               # Jinja2 template variables
@@ -24,7 +24,7 @@ ebk finds your content by file extension, not directory location. Organize howev
 **Flat structure** (also works):
 ```
 .
-├── book.yaml
+├── config.yaml
 ├── 01-intro.md           # Chapters in root
 ├── 02-getting-started.md
 ├── cover.jpg             # Images in root
@@ -67,7 +67,7 @@ Reference images in your markdown:
 ```
 
 ### CSS Stylesheets
-ebk finds `.css` files anywhere in your project. Specify which to include in `book.yaml`:
+ebk finds `.css` files anywhere in your project. Specify which to include in `config.yaml`:
 ```yaml
 default_css:
   - "custom.css"
@@ -94,7 +94,7 @@ This guide covers version {{ version }}.
 ### Excluding Directories
 By default, ebk skips: `.git`, `.venv`, `venv`, `node_modules`, `__pycache__`, `.ebk`, `build`, `dist`, `context`
 
-Customize exclusions in `book.yaml`:
+Customize exclusions in `config.yaml`:
 ```yaml
 discovery:
   exclude:
@@ -103,9 +103,9 @@ discovery:
     - "archive"
 ```
 
-## Configuration (book.yaml)
+## Configuration (config.yaml)
 
-Edit `book.yaml` to set:
+Edit `config.yaml` to set:
 - Book metadata (title, author, language, etc.)
 - Cover image location (optional)
 - CSS files to include
@@ -119,7 +119,7 @@ Edit `book.yaml` to set:
 3. **Use context files**: Keep variables separate from content for easier maintenance
 4. **Use numeric prefixes or frontmatter order**: Control chapter order explicitly
 5. **Test your templates**: Make sure Jinja2 syntax is correct before building
-6. **Exclude draft directories**: Add `drafts/` or `archive/` to discovery.exclude in book.yaml
+6. **Exclude draft directories**: Add `drafts/` or `archive/` to discovery.exclude in config.yaml
 
 ## Getting Help
 

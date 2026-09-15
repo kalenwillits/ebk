@@ -181,32 +181,32 @@ def _check_xhtml_wellformed(xhtml_str, result, filename):
 # ---------------------------------------------------------------------------
 
 def _check_book_yaml(project_root, result):
-    """Validate book.yaml structure and required metadata."""
-    book_yaml_path = os.path.join(project_root, "book.yaml")
+    """Validate config.yaml structure and required metadata."""
+    book_yaml_path = os.path.join(project_root, "config.yaml")
     if not os.path.exists(book_yaml_path):
-        result.error("book.yaml not found", file="book.yaml")
+        result.error("config.yaml not found", file="config.yaml")
         return None
 
     try:
         with open(book_yaml_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
     except yaml.YAMLError as e:
-        result.error(f"Invalid YAML syntax: {e}", file="book.yaml")
+        result.error(f"Invalid YAML syntax: {e}", file="config.yaml")
         return None
 
     if not isinstance(config, dict):
-        result.error("book.yaml must be a YAML mapping", file="book.yaml")
+        result.error("config.yaml must be a YAML mapping", file="config.yaml")
         return None
 
     metadata = config.get("metadata", {})
     if not metadata:
-        result.error("Missing 'metadata' section", file="book.yaml")
+        result.error("Missing 'metadata' section", file="config.yaml")
     else:
         # Required for any EPUB and Apple Books
         required = ["title", "author", "language", "identifier"]
         for key in required:
             if not metadata.get(key):
-                result.error(f"Missing required metadata field: {key}", file="book.yaml")
+                result.error(f"Missing required metadata field: {key}", file="config.yaml")
 
         # Apple Books strongly recommends these
         recommended = ["description", "publisher", "date"]
@@ -214,7 +214,7 @@ def _check_book_yaml(project_root, result):
             if not metadata.get(key):
                 result.warning(
                     f"Missing recommended metadata field: {key} (recommended for Apple Books)",
-                    file="book.yaml",
+                    file="config.yaml",
                 )
 
         # Validate language tag format (BCP 47)
@@ -222,7 +222,7 @@ def _check_book_yaml(project_root, result):
         if lang and not re.match(r"^[a-zA-Z]{2,3}(-[a-zA-Z0-9]+)*$", lang):
             result.warning(
                 f"Language '{lang}' may not be a valid BCP 47 tag (e.g. 'en', 'en-US')",
-                file="book.yaml",
+                file="config.yaml",
             )
 
     # Check cover image reference
@@ -233,7 +233,7 @@ def _check_book_yaml(project_root, result):
     else:
         result.warning(
             "No cover_image specified — Apple Books requires a cover image for store submissions",
-            file="book.yaml",
+            file="config.yaml",
         )
 
     return config
@@ -397,7 +397,7 @@ def _check_images(project_root, images_map, config, result):
     """Validate images for EPUB / Apple Books."""
     cover = config.get("cover_image")
     if cover and cover not in images_map:
-        result.error(f"Cover image '{cover}' referenced in book.yaml but not found", file="book.yaml")
+        result.error(f"Cover image '{cover}' referenced in config.yaml but not found", file="config.yaml")
 
     for img_name, img_path in images_map.items():
         size = os.path.getsize(img_path)
@@ -465,8 +465,8 @@ def _check_epub_structure(project_root, result):
     """Check that the project has the basic structure needed for a valid EPUB."""
     if not os.path.exists(os.path.join(project_root, ".ebk")):
         result.error("Missing .ebk marker file")
-    if not os.path.exists(os.path.join(project_root, "book.yaml")):
-        result.error("Missing book.yaml")
+    if not os.path.exists(os.path.join(project_root, "config.yaml")):
+        result.error("Missing config.yaml")
 
 
 def _check_total_size(project_root, images_map, css_files_map, result):
@@ -497,8 +497,8 @@ def lint_project(project_root, flags=None, chapters_filter=None):
     Lint an ebk project and return a LintResult.
 
     Checks performed:
-      - Project structure (.ebk, book.yaml)
-      - book.yaml validity and required metadata
+      - Project structure (.ebk, config.yaml)
+      - config.yaml validity and required metadata
       - Context file syntax (YAML / JSON)
       - Jinja2 template syntax in every chapter
       - Jinja2 rendering (catches undefined variables)
@@ -522,7 +522,7 @@ def lint_project(project_root, flags=None, chapters_filter=None):
     # 1. Project structure
     _check_epub_structure(project_root, result)
 
-    # 2. book.yaml
+    # 2. config.yaml
     config = _check_book_yaml(project_root, result)
     if config is None:
         # Can't proceed without a valid config

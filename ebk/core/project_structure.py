@@ -83,14 +83,14 @@ def copy_and_populate_templates(project_dir, book_name):
         'output_filename': output_filename,
     }
 
-    # Copy and populate book.yaml
-    with open(template_dir / 'book.yaml', 'r') as f:
+    # Copy and populate config.yaml
+    with open(template_dir / 'config.yaml', 'r') as f:
         book_yaml_content = f.read()
 
     for var, value in template_vars.items():
         book_yaml_content = book_yaml_content.replace(f'{{{var}}}', value)
 
-    with open(os.path.join(project_dir, 'book.yaml'), 'w') as f:
+    with open(os.path.join(project_dir, 'config.yaml'), 'w') as f:
         f.write(book_yaml_content)
 
     # Create .ebk marker file
@@ -106,7 +106,7 @@ def create_new_book(project_path):
     - Current directory: '.'
     - Absolute paths: '/home/user/my-book' or '~/books/novel'
     - Relative paths: 'my-book' or '../other-book'
-    - Existing directories (will add .ebk marker and book.yaml)
+    - Existing directories (will add .ebk marker and config.yaml)
 
     Args:
         project_path: Path where the project should be created (can be name or path)
@@ -148,11 +148,11 @@ def create_new_book(project_path):
     copy_and_populate_templates(str(path), book_name)
 
     print("  ✓ Initialized ebk project")
-    print("  ✓ Created book.yaml")
+    print("  ✓ Created config.yaml")
     print()
     print("Project ready! ebk works recursively, so organize your files however you prefer.")
     print("Next steps:")
     print(f"  1. cd {path.name if path != Path.cwd() else '.'}")
-    print("  2. Edit book.yaml with your book metadata")
+    print("  2. Edit config.yaml with your book metadata")
     print("  3. Add markdown files anywhere in the project")
     print("  4. Run 'ebk' to build your book")

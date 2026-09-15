@@ -8,7 +8,7 @@ from ebk.core.linter import lint_project
 def minimal_project(tmp_path):
     """Minimal valid ebk project."""
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: "Test Book"\n'
         '  author: "Test Author"\n'
@@ -33,12 +33,12 @@ def test_missing_book_yaml(tmp_path):
     (tmp_path / '.ebk').write_text('')
     result = lint_project(str(tmp_path))
     assert not result.ok
-    assert any('book.yaml' in str(d) for d in result.errors)
+    assert any('config.yaml' in str(d) for d in result.errors)
 
 
 def test_invalid_yaml_syntax(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text('metadata:\n  title: [unclosed')
+    (tmp_path / 'config.yaml').write_text('metadata:\n  title: [unclosed')
     result = lint_project(str(tmp_path))
     # This may parse oddly but not crash — depends on PyYAML behavior
     # The important thing is it doesn't raise
@@ -46,7 +46,7 @@ def test_invalid_yaml_syntax(tmp_path):
 
 def test_missing_required_metadata(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text('metadata:\n  title: "Test"\n')
+    (tmp_path / 'config.yaml').write_text('metadata:\n  title: "Test"\n')
     (tmp_path / '01-intro.md').write_text('# Intro\n\nHello.')
     result = lint_project(str(tmp_path))
     errors = [str(d) for d in result.errors]
@@ -57,7 +57,7 @@ def test_missing_required_metadata(tmp_path):
 
 def test_missing_metadata_section(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text('output:\n  filename: test.epub\n')
+    (tmp_path / 'config.yaml').write_text('output:\n  filename: test.epub\n')
     (tmp_path / '01-intro.md').write_text('# Intro\n\nHello.')
     result = lint_project(str(tmp_path))
     assert any("Missing 'metadata'" in str(d) for d in result.errors)
@@ -80,7 +80,7 @@ def test_jinja_undefined_variable(minimal_project):
 
 def test_no_chapters_found(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: "Test"\n'
         '  author: "Author"\n'
@@ -117,7 +117,7 @@ def test_no_cover_image_warning(minimal_project):
 
 def test_cover_image_not_found_error(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: "Test"\n'
         '  author: "Author"\n'
@@ -159,7 +159,7 @@ def test_invalid_context_json(minimal_project):
 
 
 def test_missing_ebk_marker(tmp_path):
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: "Test"\n'
         '  author: "Author"\n'
@@ -200,7 +200,7 @@ def test_svg_image_warning(minimal_project):
 
 def test_recommended_metadata_warnings(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: "Test"\n'
         '  author: "Author"\n'

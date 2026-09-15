@@ -71,7 +71,7 @@ def load_context(project_root, chapter_path, book_config):
     Args:
         project_root: Root directory of the ebk project
         chapter_path: Full path to the chapter markdown file
-        book_config: Parsed book.yaml configuration
+        book_config: Parsed config.yaml configuration
 
     Returns:
         dict: Merged context dictionary
@@ -153,7 +153,7 @@ def render_chapter(chapter_path, project_root, book_config):
     Args:
         chapter_path: Full path to chapter markdown file
         project_root: Root directory of ebk project
-        book_config: Parsed book.yaml configuration
+        book_config: Parsed config.yaml configuration
 
     Returns:
         str: Rendered markdown content (after Jinja2, before markdown->HTML)

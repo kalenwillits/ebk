@@ -15,7 +15,7 @@ from ebk.core.linter import run_lint
 
 def is_ebk_project():
     """Check if current directory is an ebk project."""
-    return os.path.exists('.ebk') and os.path.exists('book.yaml')
+    return os.path.exists('.ebk') and os.path.exists('config.yaml')
 
 
 def _resolve_output(output, default_filename, ext):
@@ -52,8 +52,16 @@ def check_current_project(flags=None, chapters=None):
     sys.exit(run_lint(os.getcwd(), flags=flags, chapters_filter=chapters))
 
 
-def build_current_project(pdf=False, html=False, odt=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter', margin=None):
-    """Build EPUB, PDF, HTML, or ODT from current directory."""
+VALID_FORMATS = ('pdf', 'epub', 'html', 'odt')
+
+
+def build_current_project(pdf=False, html=False, odt=False, epub=False, font_size=11, landscape=False, flags=None, output=None, chapters=None, no_cover=False, no_toc=False, booklet=False, split=None, paper='letter', margin=None):
+    """Build PDF, EPUB, HTML, or ODT from current directory.
+
+    Format resolution: an explicit --pdf/--html/--odt/--epub flag always wins.
+    Otherwise, config.yaml's output.format is used. If that key (or the whole
+    output: block) is absent, the default format is PDF.
+    """
     if flags is None:
         flags = []
 
@@ -62,23 +70,38 @@ def build_current_project(pdf=False, html=False, odt=False, font_size=11, landsc
         print("Run 'ebk <name>' to create a new project.", file=sys.stderr)
         sys.exit(1)
 
+    fmt = None
     try:
         import yaml
-        with open('book.yaml', 'r') as f:
-            config = yaml.safe_load(f)
+        with open('config.yaml', 'r') as f:
+            config = yaml.safe_load(f) or {}
 
         if pdf:
+            fmt = 'pdf'
+        elif html:
+            fmt = 'html'
+        elif odt:
+            fmt = 'odt'
+        elif epub:
+            fmt = 'epub'
+        else:
+            fmt = config.get('output', {}).get('format', 'pdf')
+            if fmt not in VALID_FORMATS:
+                print(f"Error: invalid output.format '{fmt}' in config.yaml (must be one of {', '.join(VALID_FORMATS)})", file=sys.stderr)
+                sys.exit(1)
+
+        if fmt == 'pdf':
             default = config.get('output', {}).get('pdf_filename') or os.path.basename(os.getcwd()) + '.pdf'
             output_filename = _resolve_output(output, default, '.pdf')
             print(f"Building PDF from current directory...")
             build_pdf(os.getcwd(), output_filename, font_size=font_size, landscape=landscape, flags=flags, chapters=chapters, no_cover=no_cover, no_toc=no_toc, booklet=booklet, split=split, paper=paper, margin=margin)
             print(f"✓ Created {output_filename}")
-        elif html:
+        elif fmt == 'html':
             output_dir = output or config.get('output', {}).get('html_dir', 'html')
             print(f"Building HTML from current directory...")
             build_html(os.getcwd(), output_dir, flags=flags, chapters=chapters, no_toc=no_toc)
             print(f"✓ Created {output_dir}/")
-        elif odt:
+        elif fmt == 'odt':
             default = config.get('output', {}).get('odt_filename') or os.path.basename(os.getcwd()) + '.odt'
             output_filename = _resolve_output(output, default, '.odt')
             print(f"Building ODT from current directory...")
@@ -92,7 +115,7 @@ def build_current_project(pdf=False, html=False, odt=False, font_size=11, landsc
             print(f"✓ Created {output_filename}")
 
     except Exception as e:
-        print(f"Error building {'PDF' if pdf else 'HTML' if html else 'ODT' if odt else 'EPUB'}: {e}", file=sys.stderr)
+        print(f"Error building {fmt.upper() if fmt else 'project'}: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -100,8 +123,8 @@ def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
         prog='ebk',
-        description='ebk - E-Book CLI utility for managing EPUB projects',
-        epilog='Run "ebk <name>" to create a new book project, or "ebk" in a project directory to build the EPUB.'
+        description='ebk - CLI utility for building documents (PDF, EPUB, HTML, ODT) from plain text',
+        epilog='Run "ebk <name>" to create a new project, or "ebk" in a project directory to build it (PDF by default, or per output.format in config.yaml).'
     )
 
     parser.add_argument(
@@ -119,19 +142,25 @@ def main():
     parser.add_argument(
         '--pdf',
         action='store_true',
-        help='Export to PDF instead of EPUB'
+        help="Export to PDF (default output format; overrides output.format in config.yaml)"
     )
 
     parser.add_argument(
         '--html',
         action='store_true',
-        help='Export to HTML directory instead of EPUB'
+        help='Export to HTML directory (overrides output.format in config.yaml)'
     )
 
     parser.add_argument(
         '--odt',
         action='store_true',
-        help='Export to ODT (OpenDocument Text, for LibreOffice) instead of EPUB'
+        help='Export to ODT (OpenDocument Text, for LibreOffice) (overrides output.format in config.yaml)'
+    )
+
+    parser.add_argument(
+        '--epub',
+        action='store_true',
+        help='Export to EPUB (overrides output.format in config.yaml)'
     )
 
     parser.add_argument(
@@ -246,6 +275,7 @@ def main():
             pdf=args.pdf,
             html=args.html,
             odt=args.odt,
+            epub=args.epub,
             font_size=args.font_size,
             landscape=args.landscape,
             flags=args.flags,

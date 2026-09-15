@@ -53,9 +53,9 @@ def build_html(project_root, output_dir, flags=None, chapters=None, no_toc=False
         output_dir: Directory to write HTML output into
         flags: List of active feature flag strings for conditional rendering
     """
-    book_yaml_path = os.path.join(project_root, 'book.yaml')
+    book_yaml_path = os.path.join(project_root, 'config.yaml')
     if not os.path.exists(book_yaml_path):
-        raise FileNotFoundError("book.yaml not found")
+        raise FileNotFoundError("config.yaml not found")
 
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)

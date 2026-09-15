@@ -380,7 +380,7 @@ def build_odt(project_root, output_path, flags=None, chapters=None,
 
     Raises:
         ImportError: If odfpy is not installed.
-        FileNotFoundError: If book.yaml is missing.
+        FileNotFoundError: If config.yaml is missing.
         ValueError: If no chapters are found.
     """
     try:
@@ -393,9 +393,9 @@ def build_odt(project_root, output_path, flags=None, chapters=None,
 
     print("Discovering chapters...")
 
-    book_yaml_path = os.path.join(project_root, 'book.yaml')
+    book_yaml_path = os.path.join(project_root, 'config.yaml')
     if not os.path.exists(book_yaml_path):
-        raise FileNotFoundError("book.yaml not found")
+        raise FileNotFoundError("config.yaml not found")
 
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)

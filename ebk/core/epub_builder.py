@@ -478,10 +478,10 @@ def build_epub(project_root, output_path, flags=None, chapters=None):
     """
     print("Discovering chapters...")
 
-    # Load book.yaml configuration
-    book_yaml_path = os.path.join(project_root, 'book.yaml')
+    # Load config.yaml configuration
+    book_yaml_path = os.path.join(project_root, 'config.yaml')
     if not os.path.exists(book_yaml_path):
-        raise FileNotFoundError("book.yaml not found")
+        raise FileNotFoundError("config.yaml not found")
 
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)

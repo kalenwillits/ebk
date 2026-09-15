@@ -9,7 +9,7 @@ pytest.importorskip("weasyprint", reason="weasyprint not installed")
 @pytest.fixture
 def simple_project(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: Test Book\n'
         '  author: Test Author\n'

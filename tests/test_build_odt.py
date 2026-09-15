@@ -16,7 +16,7 @@ def _content_xml(path):
 @pytest.fixture
 def simple_project(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text(
+    (tmp_path / 'config.yaml').write_text(
         'metadata:\n'
         '  title: Test Book\n'
         '  author: Test Author\n'
@@ -91,7 +91,7 @@ def test_odt_chapter_selection(simple_project, tmp_path):
 
 def test_odt_converts_rich_markdown(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text('metadata:\n  title: Rich\n')
+    (tmp_path / 'config.yaml').write_text('metadata:\n  title: Rich\n')
     (tmp_path / '01-rich.md').write_text(
         '# Rich\n\n'
         'A **bold** and *italic* and `code` line with a [link](http://x.com).\n\n'
@@ -110,7 +110,7 @@ def test_odt_converts_rich_markdown(tmp_path):
 
 def test_odt_table_has_borders_and_padding(tmp_path):
     (tmp_path / '.ebk').write_text('')
-    (tmp_path / 'book.yaml').write_text('metadata:\n  title: T\n')
+    (tmp_path / 'config.yaml').write_text('metadata:\n  title: T\n')
     (tmp_path / '01.md').write_text(
         '# T\n\n| Name | Role |\n|------|------|\n| Alice | Eng |\n| Bob | PM |\n'
     )

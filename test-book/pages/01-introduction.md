@@ -6,7 +6,7 @@ This is a sample chapter to help you get started with ebk.
 
 ## Getting Started
 
-1. Edit `book.yaml` to set your book's metadata
+1. Edit `config.yaml` to set your book's metadata
 2. Add your content as markdown files in the `pages/` directory
 3. Use numeric prefixes (01-, 02-, etc.) to control chapter ordering
 4. Run `ebk` in this directory to build your EPUB

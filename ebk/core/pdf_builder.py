@@ -63,9 +63,9 @@ def build_pdf(project_root, output_path, font_size=None, landscape=False, flags=
 
     print("Discovering chapters...")
 
-    book_yaml_path = os.path.join(project_root, 'book.yaml')
+    book_yaml_path = os.path.join(project_root, 'config.yaml')
     if not os.path.exists(book_yaml_path):
-        raise FileNotFoundError("book.yaml not found")
+        raise FileNotFoundError("config.yaml not found")
 
     with open(book_yaml_path, 'r') as f:
         book_config = yaml.safe_load(f)

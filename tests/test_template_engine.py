@@ -40,7 +40,7 @@ def test_no_template_syntax_passes_through():
 # --- load_context ---
 
 def test_flags_in_context(tmp_path):
-    (tmp_path / 'book.yaml').write_text('metadata:\n  title: Test\n')
+    (tmp_path / 'config.yaml').write_text('metadata:\n  title: Test\n')
     (tmp_path / '.ebk').write_text('')
     chapter = tmp_path / 'ch.md'
     chapter.write_text('# Chapter')
